@@ -17,10 +17,22 @@ include { THERMORAWFILEPARSER } from '../modules/nf-core/thermorawfileparser/mai
 workflow RIBOMSQC {
 
     take:
-    ch_samplesheet // channel: samplesheet read in from --input
-    main:
+    input_ch
 
+    main:
     ch_versions = Channel.empty()
+
+
+    //
+    // MODULE: Run THERMORAWFILEPARSER
+    //
+    THERMORAWFILEPARSER(
+        input_ch
+    )
+
+    println "DEBUG RIBOMSQC.NF: after THERMORAWFILEPARSER"    
+    
+    ch_versions = ch_versions.mix(THERMORAWFILEPARSER.out.versions)
 
     //
     // Collate and save software versions
@@ -33,10 +45,9 @@ workflow RIBOMSQC {
             newLine: true
         ).set { ch_collated_versions }
 
-
     emit:
-    versions       = ch_versions                 // channel: [ path(versions.yml) ]
-
+    versions = ch_versions                 // channel: [ path(versions.yml) ]
+    spectra  = THERMORAWFILEPARSER.out.spectra // Adjust this based on the actual output of THERMORAWFILEPARSER
 }
 
 /*
