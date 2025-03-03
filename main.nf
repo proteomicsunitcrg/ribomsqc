@@ -31,7 +31,7 @@ input_ch = Channel.fromPath(params.input)
     }
 
 input_ch.view { meta, file -> 
-    println "DEBUG MAIN.NF: input_ch -> Meta: ${meta}, File: ${file}"   
+    println "DEBUG MAIN.NF: input_ch -> Meta: ${meta} (${meta.getClass()}), File: ${file} (${file.getClass()})"
 }
 
 //

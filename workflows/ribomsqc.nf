@@ -22,12 +22,11 @@ workflow RIBOMSQC {
     main:
     ch_versions = Channel.empty()
 
-
     //
     // MODULE: Run THERMORAWFILEPARSER
     //
     THERMORAWFILEPARSER(
-        input_ch
+         input_ch.map { it -> tuple(it[0].toString(), file(it[1].toString())) }
     )
 
     println "DEBUG RIBOMSQC.NF: after THERMORAWFILEPARSER"    
