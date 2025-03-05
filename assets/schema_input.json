@@ -7,10 +7,10 @@
     "items": {
         "type": "object",
         "properties": {
-            "sample": {
+            "id": {
                 "type": "string",
                 "pattern": "^\\S+$",
-                "errorMessage": "Sample name must be provided and cannot contain spaces",
+                "errorMessage": "Sample id must be provided and cannot contain spaces",
                 "meta": ["id"]
             },
             "raw_file": {
@@ -21,6 +21,6 @@
                 "errorMessage": "Raw file must be provided, cannot contain spaces and must have extension '.raw'"
             }
         },
-        "required": ["sample", "raw_file"]
+        "required": ["id", "raw_file"]
     }
 }

@@ -24,16 +24,6 @@ include { PIPELINE_COMPLETION     } from './subworkflows/local/utils_nfcore_ribo
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-input_ch = Channel.fromPath(params.input)
-    .splitCsv(header:true)
-    .map { row -> 
-        [ row.sample, file(row.raw_file) ]
-    }
-
-input_ch.view { meta, file -> 
-    println "DEBUG MAIN.NF: input_ch -> Meta: ${meta} (${meta.getClass()}), File: ${file} (${file.getClass()})"
-}
-
 //
 // WORKFLOW: Run main analysis pipeline depending on type of input
 //
@@ -74,7 +64,7 @@ workflow {
     // WORKFLOW: Run main workflow
     //
     NFCORE_RIBOMSQC (
-       input_ch
+       PIPELINE_INITIALISATION.out.samplesheet
     )
     //
     // SUBWORKFLOW: Run completion tasks

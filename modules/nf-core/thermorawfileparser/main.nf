@@ -18,12 +18,8 @@ process THERMORAWFILEPARSER {
     task.ext.when == null || task.ext.when
 
     script:
-    print "DEBUG 1 INSIDE THERMORAWFILEPARSER: meta: ${meta}, raw: ${raw}"
     def args = task.ext.args ?: ''
-    print "DEBUG 2 INSIDE THERMORAWFILEPARSER: args: ${args}"
     def prefix = task.ext.prefix ?: "${meta.id}"
-    print "DEBUG 3 INSIDE THERMORAWFILEPARSER: prefix: ${prefix}"
-
     def suffix = args.contains("--format 0") || args.contains("-f 0") ? "mgf" :
                 args.contains("--format 1") || args.contains("-f 1") ? "mzML" :
                 args.contains("--format 2") || args.contains("-f 2") ? "mzML" :
