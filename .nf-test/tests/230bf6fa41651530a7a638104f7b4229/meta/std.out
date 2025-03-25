@@ -1,0 +1,3 @@
+Process `MSNBASXIC` declares 9 input channels but 0 were specified
+
+ -- Check script '/home/proteomics/mygit/nf-core/nf-core-ribomsqc/.nf-test-230bf6fa41651530a7a638104f7b4229.nf' at line: 35 or see '/home/proteomics/mygit/nf-core/nf-core-ribomsqc/.nf-test/tests/230bf6fa41651530a7a638104f7b4229/meta/nextflow.log' file for more details

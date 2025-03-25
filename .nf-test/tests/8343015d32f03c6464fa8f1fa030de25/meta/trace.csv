@@ -1,0 +1,2 @@
+task_id	hash	native_id	name	status	exit	submit	duration	realtime	%cpu	peak_rss	peak_vmem	rchar	wchar
+1	71/afd2f6	40299	MSNBASXIC (test)	FAILED	0	2025-03-25 16:46:03.188	12.4s	12.4s	100.7%	1.6 GB	2 GB	196.4 MB	81.5 KB

@@ -1,0 +1,8 @@
+ERROR ~ Error executing process > 'MSNBASXIC'
+
+Caused by:
+  Cannot invoke method clone() on null object
+
+
+
+ -- Check '/home/proteomics/mygit/nf-core/nf-core-ribomsqc/.nf-test/tests/6bbebe054564a7f2378f7300b9a11269/meta/nextflow.log' file for details
