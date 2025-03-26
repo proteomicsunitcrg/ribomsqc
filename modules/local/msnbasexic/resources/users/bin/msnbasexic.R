@@ -151,14 +151,11 @@ function_create_output_df <- function(sample_name, rt_target, rt_obs, mz1, mz_ex
 }
 
 # Function to write results to a TSV file
-write_results <- function(output_df, output_dir, file_name) {
-  if (!dir.exists(output_dir)) {
-    dir.create(output_dir, recursive = TRUE)
-  }
+write_results <- function(output_df, file_name) {
 
   # Generate output filename
   sample_name <- tools::file_path_sans_ext(basename(file_name))
-  output_file <- file.path(output_dir, paste0(sample_name, ".tsv"))
+  output_file <- paste0(sample_name, ".tsv")
 
   # Save data to file
   write.table(output_df, output_file, sep = "\t", row.names = FALSE, quote = FALSE)
@@ -339,7 +336,7 @@ if (file.exists(output_file) && !opt$overwrite_tsv) {
   existing_data <- read.delim(output_file, sep = "\t", header = TRUE, stringsAsFactors = FALSE)
 
   if (!identical(colnames(existing_data), colnames(output_df))) {
-    stop("❌ Column mismatch between existing TSV and new output. Consider overwriting.")
+    stop("Column mismatch between existing TSV and new output. Consider overwriting.")
   }
   output_df <- rbind(existing_data, output_df)
 
@@ -353,5 +350,22 @@ if (file.exists(output_file) && !opt$overwrite_tsv) {
   output_df$Area <- format(output_df$Area, scientific = TRUE)
 }
 
-write_results(output_df, opt$output_dir, output_file)  # Write updated data
+write_results(output_df, opt$file_name)
+
+# Write versions.yml for Nextflow traceability
+version_info <- list(
+  msnbasexic_script = "msnbasexic.R",
+  generated_at = as.character(Sys.time()),
+  R_version = paste(R.version$major, R.version$minor, sep = "."),
+  MSnbase_version = as.character(packageVersion("MSnbase")),
+  ggplot2_version = as.character(packageVersion("ggplot2")),
+  pracma_version = as.character(packageVersion("pracma"))
+)
+
+# Write key-value pairs in YAML-style format
+lines <- unlist(lapply(names(version_info), function(k) paste0(k, ": ", version_info[[k]])))
+writeLines(lines, "versions.yml")
+
+print("versions.yml generated.")
+
 print(paste("Updated TSV file:", output_file))

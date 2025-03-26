@@ -1,143 +1,83 @@
-Mar-25 16:45:59.703 [main] DEBUG nextflow.cli.Launcher - $> nextflow -quiet -log /home/proteomics/mygit/nf-core/nf-core-ribomsqc/.nf-test/tests/8343015d32f03c6464fa8f1fa030de25/meta/nextflow.log run /home/proteomics/mygit/nf-core/nf-core-ribomsqc/.nf-test-8343015d32f03c6464fa8f1fa030de25.nf -c /home/proteomics/mygit/nf-core/nf-core-ribomsqc/nextflow.config -c /home/proteomics/mygit/nf-core/nf-core-ribomsqc/modules/local/msnbasexic/tests/./nextflow.config -params-file /home/proteomics/mygit/nf-core/nf-core-ribomsqc/.nf-test/tests/8343015d32f03c6464fa8f1fa030de25/meta/params.json -ansi-log false -with-trace /home/proteomics/mygit/nf-core/nf-core-ribomsqc/.nf-test/tests/8343015d32f03c6464fa8f1fa030de25/meta/trace.csv -w /home/proteomics/mygit/nf-core/nf-core-ribomsqc/.nf-test/tests/8343015d32f03c6464fa8f1fa030de25/work
-Mar-25 16:45:59.768 [main] INFO  nextflow.cli.CmdRun - N E X T F L O W  ~  version 24.10.4
-Mar-25 16:45:59.790 [main] DEBUG nextflow.plugin.PluginsFacade - Setting up plugin manager > mode=prod; embedded=false; plugins-dir=/home/proteomics/.nextflow/plugins; core-plugins: nf-amazon@2.9.2,nf-azure@1.10.2,nf-cloudcache@0.4.2,nf-codecommit@0.2.2,nf-console@1.1.4,nf-google@1.15.3,nf-tower@1.9.3,nf-wave@1.7.4
-Mar-25 16:45:59.805 [main] INFO  o.pf4j.DefaultPluginStatusProvider - Enabled plugins: []
-Mar-25 16:45:59.806 [main] INFO  o.pf4j.DefaultPluginStatusProvider - Disabled plugins: []
-Mar-25 16:45:59.810 [main] INFO  org.pf4j.DefaultPluginManager - PF4J version 3.12.0 in 'deployment' mode
-Mar-25 16:45:59.822 [main] INFO  org.pf4j.AbstractPluginManager - No plugins
-Mar-25 16:45:59.847 [main] DEBUG nextflow.config.ConfigBuilder - Found config base: /home/proteomics/mygit/nf-core/nf-core-ribomsqc/nextflow.config
-Mar-25 16:45:59.851 [main] DEBUG nextflow.config.ConfigBuilder - User config file: /home/proteomics/mygit/nf-core/nf-core-ribomsqc/nextflow.config
-Mar-25 16:45:59.852 [main] DEBUG nextflow.config.ConfigBuilder - User config file: /home/proteomics/mygit/nf-core/nf-core-ribomsqc/modules/local/msnbasexic/tests/./nextflow.config
-Mar-25 16:45:59.854 [main] DEBUG nextflow.config.ConfigBuilder - Parsing config file: /home/proteomics/mygit/nf-core/nf-core-ribomsqc/nextflow.config
-Mar-25 16:45:59.854 [main] DEBUG nextflow.config.ConfigBuilder - Parsing config file: /home/proteomics/mygit/nf-core/nf-core-ribomsqc/nextflow.config
-Mar-25 16:45:59.854 [main] DEBUG nextflow.config.ConfigBuilder - Parsing config file: /home/proteomics/mygit/nf-core/nf-core-ribomsqc/modules/local/msnbasexic/tests/nextflow.config
-Mar-25 16:45:59.880 [main] DEBUG n.secret.LocalSecretsProvider - Secrets store: /home/proteomics/.nextflow/secrets/store.json
-Mar-25 16:45:59.883 [main] DEBUG nextflow.secret.SecretsLoader - Discovered secrets providers: [nextflow.secret.LocalSecretsProvider@52b6319f] - activable => nextflow.secret.LocalSecretsProvider@52b6319f
-Mar-25 16:45:59.904 [main] DEBUG nextflow.config.ConfigBuilder - Applying config profile: `standard`
-Mar-25 16:46:01.557 [main] DEBUG nextflow.config.ConfigBuilder - Applying config profile: `standard`
-Mar-25 16:46:01.807 [main] DEBUG nextflow.config.ConfigBuilder - Applying config profile: `standard`
-Mar-25 16:46:01.899 [main] DEBUG nextflow.cli.CmdRun - Applied DSL=2 from script declaration
-Mar-25 16:46:01.919 [main] INFO  nextflow.cli.CmdRun - Launching `/home/proteomics/mygit/nf-core/nf-core-ribomsqc/.nf-test-8343015d32f03c6464fa8f1fa030de25.nf` [lonely_stonebraker] DSL2 - revision: d8375810dc
-Mar-25 16:46:01.921 [main] DEBUG nextflow.plugin.PluginsFacade - Plugins declared=[nf-schema@2.3.0]
-Mar-25 16:46:01.922 [main] DEBUG nextflow.plugin.PluginsFacade - Plugins default=[]
-Mar-25 16:46:01.922 [main] DEBUG nextflow.plugin.PluginsFacade - Plugins resolved requirement=[nf-schema@2.3.0]
-Mar-25 16:46:01.922 [main] DEBUG nextflow.plugin.PluginUpdater - Installing plugin nf-schema version: 2.3.0
-Mar-25 16:46:01.930 [main] INFO  org.pf4j.AbstractPluginManager - Plugin 'nf-schema@2.3.0' resolved
-Mar-25 16:46:01.930 [main] INFO  org.pf4j.AbstractPluginManager - Start plugin 'nf-schema@2.3.0'
-Mar-25 16:46:01.938 [main] DEBUG nextflow.plugin.BasePlugin - Plugin started nf-schema@2.3.0
-Mar-25 16:46:02.012 [main] DEBUG nextflow.Session - Session UUID: cef0a236-b706-4090-802b-2b977b078b3e
-Mar-25 16:46:02.013 [main] DEBUG nextflow.Session - Run name: lonely_stonebraker
-Mar-25 16:46:02.013 [main] DEBUG nextflow.Session - Executor pool size: 8
-Mar-25 16:46:02.025 [main] DEBUG nextflow.file.FilePorter - File porter settings maxRetries=3; maxTransfers=50; pollTimeout=null
-Mar-25 16:46:02.031 [main] DEBUG nextflow.util.ThreadPoolBuilder - Creating thread pool 'FileTransfer' minSize=10; maxSize=24; workQueue=LinkedBlockingQueue[10000]; allowCoreThreadTimeout=false
-Mar-25 16:46:02.050 [main] DEBUG nextflow.cli.CmdRun - 
+Mar-26 10:22:39.922 [main] DEBUG nextflow.cli.Launcher - $> nextflow -quiet -log /home/proteomics/mygit/nf-core/nf-core-ribomsqc/.nf-test/tests/8343015d32f03c6464fa8f1fa030de25/meta/nextflow.log run /home/proteomics/mygit/nf-core/nf-core-ribomsqc/.nf-test-8343015d32f03c6464fa8f1fa030de25.nf -c /home/proteomics/mygit/nf-core/nf-core-ribomsqc/nextflow.config -c /home/proteomics/mygit/nf-core/nf-core-ribomsqc/modules/local/msnbasexic/tests/./nextflow.config -params-file /home/proteomics/mygit/nf-core/nf-core-ribomsqc/.nf-test/tests/8343015d32f03c6464fa8f1fa030de25/meta/params.json -ansi-log false -with-trace /home/proteomics/mygit/nf-core/nf-core-ribomsqc/.nf-test/tests/8343015d32f03c6464fa8f1fa030de25/meta/trace.csv -w /home/proteomics/mygit/nf-core/nf-core-ribomsqc/.nf-test/tests/8343015d32f03c6464fa8f1fa030de25/work
+Mar-26 10:22:39.991 [main] INFO  nextflow.cli.CmdRun - N E X T F L O W  ~  version 24.10.4
+Mar-26 10:22:40.010 [main] DEBUG nextflow.plugin.PluginsFacade - Setting up plugin manager > mode=prod; embedded=false; plugins-dir=/home/proteomics/.nextflow/plugins; core-plugins: nf-amazon@2.9.2,nf-azure@1.10.2,nf-cloudcache@0.4.2,nf-codecommit@0.2.2,nf-console@1.1.4,nf-google@1.15.3,nf-tower@1.9.3,nf-wave@1.7.4
+Mar-26 10:22:40.024 [main] INFO  o.pf4j.DefaultPluginStatusProvider - Enabled plugins: []
+Mar-26 10:22:40.025 [main] INFO  o.pf4j.DefaultPluginStatusProvider - Disabled plugins: []
+Mar-26 10:22:40.028 [main] INFO  org.pf4j.DefaultPluginManager - PF4J version 3.12.0 in 'deployment' mode
+Mar-26 10:22:40.039 [main] INFO  org.pf4j.AbstractPluginManager - No plugins
+Mar-26 10:22:40.061 [main] DEBUG nextflow.config.ConfigBuilder - Found config base: /home/proteomics/mygit/nf-core/nf-core-ribomsqc/nextflow.config
+Mar-26 10:22:40.066 [main] DEBUG nextflow.config.ConfigBuilder - User config file: /home/proteomics/mygit/nf-core/nf-core-ribomsqc/nextflow.config
+Mar-26 10:22:40.066 [main] DEBUG nextflow.config.ConfigBuilder - User config file: /home/proteomics/mygit/nf-core/nf-core-ribomsqc/modules/local/msnbasexic/tests/./nextflow.config
+Mar-26 10:22:40.067 [main] DEBUG nextflow.config.ConfigBuilder - Parsing config file: /home/proteomics/mygit/nf-core/nf-core-ribomsqc/nextflow.config
+Mar-26 10:22:40.068 [main] DEBUG nextflow.config.ConfigBuilder - Parsing config file: /home/proteomics/mygit/nf-core/nf-core-ribomsqc/nextflow.config
+Mar-26 10:22:40.068 [main] DEBUG nextflow.config.ConfigBuilder - Parsing config file: /home/proteomics/mygit/nf-core/nf-core-ribomsqc/modules/local/msnbasexic/tests/nextflow.config
+Mar-26 10:22:40.092 [main] DEBUG n.secret.LocalSecretsProvider - Secrets store: /home/proteomics/.nextflow/secrets/store.json
+Mar-26 10:22:40.095 [main] DEBUG nextflow.secret.SecretsLoader - Discovered secrets providers: [nextflow.secret.LocalSecretsProvider@52b6319f] - activable => nextflow.secret.LocalSecretsProvider@52b6319f
+Mar-26 10:22:40.115 [main] DEBUG nextflow.config.ConfigBuilder - Applying config profile: `standard`
+Mar-26 10:22:41.770 [main] DEBUG nextflow.config.ConfigBuilder - Applying config profile: `standard`
+Mar-26 10:22:42.095 [main] DEBUG nextflow.config.ConfigBuilder - Applying config profile: `standard`
+Mar-26 10:22:42.177 [main] DEBUG nextflow.cli.CmdRun - Applied DSL=2 from script declaration
+Mar-26 10:22:42.196 [main] INFO  nextflow.cli.CmdRun - Launching `/home/proteomics/mygit/nf-core/nf-core-ribomsqc/.nf-test-8343015d32f03c6464fa8f1fa030de25.nf` [friendly_wing] DSL2 - revision: d8375810dc
+Mar-26 10:22:42.197 [main] DEBUG nextflow.plugin.PluginsFacade - Plugins declared=[nf-schema@2.3.0]
+Mar-26 10:22:42.197 [main] DEBUG nextflow.plugin.PluginsFacade - Plugins default=[]
+Mar-26 10:22:42.198 [main] DEBUG nextflow.plugin.PluginsFacade - Plugins resolved requirement=[nf-schema@2.3.0]
+Mar-26 10:22:42.198 [main] DEBUG nextflow.plugin.PluginUpdater - Installing plugin nf-schema version: 2.3.0
+Mar-26 10:22:42.203 [main] INFO  org.pf4j.AbstractPluginManager - Plugin 'nf-schema@2.3.0' resolved
+Mar-26 10:22:42.204 [main] INFO  org.pf4j.AbstractPluginManager - Start plugin 'nf-schema@2.3.0'
+Mar-26 10:22:42.209 [main] DEBUG nextflow.plugin.BasePlugin - Plugin started nf-schema@2.3.0
+Mar-26 10:22:42.262 [main] DEBUG nextflow.Session - Session UUID: beac9a61-a358-48eb-b735-e295d27239fb
+Mar-26 10:22:42.262 [main] DEBUG nextflow.Session - Run name: friendly_wing
+Mar-26 10:22:42.263 [main] DEBUG nextflow.Session - Executor pool size: 8
+Mar-26 10:22:42.273 [main] DEBUG nextflow.file.FilePorter - File porter settings maxRetries=3; maxTransfers=50; pollTimeout=null
+Mar-26 10:22:42.279 [main] DEBUG nextflow.util.ThreadPoolBuilder - Creating thread pool 'FileTransfer' minSize=10; maxSize=24; workQueue=LinkedBlockingQueue[10000]; allowCoreThreadTimeout=false
+Mar-26 10:22:42.296 [main] DEBUG nextflow.cli.CmdRun - 
   Version: 24.10.4 build 5934
   Created: 20-01-2025 16:47 UTC (17:47 CEST)
   System: Linux 6.8.0-52-generic
   Runtime: Groovy 4.0.23 on OpenJDK 64-Bit Server VM 11.0.2+9
   Encoding: UTF-8 (UTF-8)
-  Process: 40170@hipnos6 [10.44.128.23]
-  CPUs: 8 - Mem: 15.5 GB (4.7 GB) - Swap: 2 GB (2 GB)
-Mar-25 16:46:02.074 [main] DEBUG nextflow.Session - Work-dir: /home/proteomics/mygit/nf-core/nf-core-ribomsqc/.nf-test/tests/8343015d32f03c6464fa8f1fa030de25/work [ext2/ext3]
-Mar-25 16:46:02.074 [main] DEBUG nextflow.Session - Script base path does not exist or is not a directory: /home/proteomics/mygit/nf-core/nf-core-ribomsqc/bin
-Mar-25 16:46:02.087 [main] DEBUG nextflow.executor.ExecutorFactory - Extension executors providers=[]
-Mar-25 16:46:02.100 [main] DEBUG nextflow.Session - Observer factory: DefaultObserverFactory
-Mar-25 16:46:02.124 [main] DEBUG nextflow.Session - Observer factory: ValidationObserverFactory
-Mar-25 16:46:02.181 [main] DEBUG nextflow.cache.CacheFactory - Using Nextflow cache factory: nextflow.cache.DefaultCacheFactory
-Mar-25 16:46:02.192 [main] DEBUG nextflow.util.CustomThreadPool - Creating default thread pool > poolSize: 9; maxThreads: 1000
-Mar-25 16:46:02.271 [main] DEBUG nextflow.Session - Session start
-Mar-25 16:46:02.274 [main] DEBUG nextflow.trace.TraceFileObserver - Workflow started -- trace file: /home/proteomics/mygit/nf-core/nf-core-ribomsqc/.nf-test/tests/8343015d32f03c6464fa8f1fa030de25/meta/trace.csv
-Mar-25 16:46:02.536 [main] DEBUG nextflow.script.ScriptRunner - > Launching execution
-Mar-25 16:46:02.812 [main] DEBUG nextflow.script.ProcessConfig - Config settings `withLabel:process_single` matches labels `process_single` for process with name MSNBASXIC
-Mar-25 16:46:02.841 [main] DEBUG nextflow.executor.ExecutorFactory - << taskConfig executor: null
-Mar-25 16:46:02.841 [main] DEBUG nextflow.executor.ExecutorFactory - >> processorType: 'local'
-Mar-25 16:46:02.848 [main] DEBUG nextflow.executor.Executor - [warm up] executor > local
-Mar-25 16:46:02.854 [main] DEBUG n.processor.LocalPollingMonitor - Creating local task monitor for executor 'local' > cpus=8; memory=15.5 GB; capacity=8; pollInterval=100ms; dumpInterval=5m
-Mar-25 16:46:02.856 [main] DEBUG n.processor.TaskPollingMonitor - >>> barrier register (monitor: local)
-Mar-25 16:46:02.981 [main] DEBUG nextflow.Session - Config process names validation disabled as requested
-Mar-25 16:46:02.981 [main] DEBUG nextflow.Session - Igniting dataflow network (1)
-Mar-25 16:46:02.982 [main] DEBUG nextflow.processor.TaskProcessor - Starting process > MSNBASXIC
-Mar-25 16:46:02.983 [main] DEBUG nextflow.script.ScriptRunner - Parsed script files:
-  Script_29bac1a2287d32a4: /home/proteomics/mygit/nf-core/nf-core-ribomsqc/.nf-test-8343015d32f03c6464fa8f1fa030de25.nf
+  Process: 149657@hipnos6 [10.44.128.23]
+  CPUs: 8 - Mem: 15.5 GB (2 GB) - Swap: 2 GB (2 GB)
+Mar-26 10:22:42.320 [main] DEBUG nextflow.Session - Work-dir: /home/proteomics/mygit/nf-core/nf-core-ribomsqc/.nf-test/tests/8343015d32f03c6464fa8f1fa030de25/work [ext2/ext3]
+Mar-26 10:22:42.320 [main] DEBUG nextflow.Session - Script base path does not exist or is not a directory: /home/proteomics/mygit/nf-core/nf-core-ribomsqc/bin
+Mar-26 10:22:42.333 [main] DEBUG nextflow.executor.ExecutorFactory - Extension executors providers=[]
+Mar-26 10:22:42.345 [main] DEBUG nextflow.Session - Observer factory: DefaultObserverFactory
+Mar-26 10:22:42.369 [main] DEBUG nextflow.Session - Observer factory: ValidationObserverFactory
+Mar-26 10:22:42.424 [main] DEBUG nextflow.cache.CacheFactory - Using Nextflow cache factory: nextflow.cache.DefaultCacheFactory
+Mar-26 10:22:42.435 [main] DEBUG nextflow.util.CustomThreadPool - Creating default thread pool > poolSize: 9; maxThreads: 1000
+Mar-26 10:22:42.513 [main] DEBUG nextflow.Session - Session start
+Mar-26 10:22:42.515 [main] DEBUG nextflow.trace.TraceFileObserver - Workflow started -- trace file: /home/proteomics/mygit/nf-core/nf-core-ribomsqc/.nf-test/tests/8343015d32f03c6464fa8f1fa030de25/meta/trace.csv
+Mar-26 10:22:42.754 [main] DEBUG nextflow.script.ScriptRunner - > Launching execution
+Mar-26 10:22:43.054 [main] DEBUG nextflow.script.ProcessConfig - Config settings `withLabel:process_single` matches labels `process_single` for process with name MSNBASXIC
+Mar-26 10:22:43.092 [main] DEBUG nextflow.executor.ExecutorFactory - << taskConfig executor: null
+Mar-26 10:22:43.093 [main] DEBUG nextflow.executor.ExecutorFactory - >> processorType: 'local'
+Mar-26 10:22:43.101 [main] DEBUG nextflow.executor.Executor - [warm up] executor > local
+Mar-26 10:22:43.108 [main] DEBUG n.processor.LocalPollingMonitor - Creating local task monitor for executor 'local' > cpus=8; memory=15.5 GB; capacity=8; pollInterval=100ms; dumpInterval=5m
+Mar-26 10:22:43.112 [main] DEBUG n.processor.TaskPollingMonitor - >>> barrier register (monitor: local)
+Mar-26 10:22:43.262 [main] DEBUG nextflow.Session - Config process names validation disabled as requested
+Mar-26 10:22:43.263 [main] DEBUG nextflow.Session - Igniting dataflow network (1)
+Mar-26 10:22:43.264 [main] DEBUG nextflow.processor.TaskProcessor - Starting process > MSNBASXIC
+Mar-26 10:22:43.265 [main] DEBUG nextflow.script.ScriptRunner - Parsed script files:
   Script_1a2bbb10a5d61a00: /home/proteomics/mygit/nf-core/nf-core-ribomsqc/modules/local/msnbasexic/tests/../main.nf
-Mar-25 16:46:02.983 [main] DEBUG nextflow.script.ScriptRunner - > Awaiting termination 
-Mar-25 16:46:02.983 [main] DEBUG nextflow.Session - Session await
-Mar-25 16:46:03.186 [Task submitter] DEBUG n.executor.local.LocalTaskHandler - Launch cmd line: /bin/bash -ue .command.run
-Mar-25 16:46:03.188 [Task submitter] INFO  nextflow.Session - [71/afd2f6] Submitted process > MSNBASXIC (test)
-Mar-25 16:46:15.623 [Task monitor] DEBUG n.processor.TaskPollingMonitor - Task completed > TaskHandler[id: 1; name: MSNBASXIC (test); status: COMPLETED; exit: 0; error: -; workDir: /home/proteomics/mygit/nf-core/nf-core-ribomsqc/.nf-test/tests/8343015d32f03c6464fa8f1fa030de25/work/71/afd2f6d3744431509ae9656442217b]
-Mar-25 16:46:15.624 [Task monitor] DEBUG nextflow.util.ThreadPoolBuilder - Creating thread pool 'TaskFinalizer' minSize=10; maxSize=24; workQueue=LinkedBlockingQueue[10000]; allowCoreThreadTimeout=false
-Mar-25 16:46:15.649 [TaskFinalizer-1] DEBUG nextflow.processor.TaskProcessor - Handling unexpected condition for
-  task: name=MSNBASXIC (test); work-dir=/home/proteomics/mygit/nf-core/nf-core-ribomsqc/.nf-test/tests/8343015d32f03c6464fa8f1fa030de25/work/71/afd2f6d3744431509ae9656442217b
-  error [nextflow.exception.MissingFileException]: Missing output file(s) `*.tsv` expected by process `MSNBASXIC (test)` (note: input files are not included in the default matching set)
-Mar-25 16:46:15.690 [TaskFinalizer-1] ERROR nextflow.processor.TaskProcessor - Error executing process > 'MSNBASXIC (test)'
-
-Caused by:
-  Missing output file(s) `*.tsv` expected by process `MSNBASXIC (test)` (note: input files are not included in the default matching set)
-
-
-Command executed:
-
-  Rscript /home/proteomics/mygit/nf-core/nf-core-ribomsqc/modules/local/msnbasexic/resources/users/bin/msnbasexic.R \
-  --file_name 20240315_QCN1_001_03_New_STD.mzML \
-  --tsv_name qcn1.tsv \
-  --output_dir test_results/xic_results \
-  --analyte_name m3C \
-  --rt_tol_sec 150 \
-  --mz_tol_ppm 20 \
-  --msLevel 2 \
-  --plot_xic_ms1 false \
-  --plot_xic_ms2 false \
-  --plot_output_path xic_plot.pdf \
-  --overwrite_tsv true
-
-Command exit status:
-  0
-
-Command output:
-  [1] "Analyte: m3C"
-  [1] "MS level 2 with transition mass 126.0662"
-  [1] "mz_tol in DA: 0.002521324"
-  [1] "Mode: monoisotopic peak."
-  [1] "Loading mzML file: 20240315_QCN1_001_03_New_STD.mzML"
-  [1] "File loaded!"
-  [1] "Computing XIC..."
-  [1] "MS2 spectra after RT filtering: 13068"
-  [1] "XIC data in MS2: 393.658919824"
-  [1] "Minimum retention time: 393.658919824"
-  [1] "Maximum retention time: 693.493560271998"
-  [1] "Retention time with highest intensity: 542.825757616"
-  [1] "Maximum intensity in XIC: 32297873.96875"
-  Points Per Peak (PPP): 115 
-  FWHM (seconds): 11.8124 
-  [1] "Expected retention time (RT target): 543.6"
-  [1] "Observed retention time: 542.825757616"
-  [1] "Difference in RT (dRT): -0.774242383999763"
-  [1] "Mass m/z1: 126.0662"
-  [1] "Maximum intensity (M+0): 3.23e+07"
-  [1] "Area M+0: 2.96e+08"
-  [1] "Total calculated area: 2.96e+08"
-  [1] "Log2 of total area: 28.1"
-  [1] "Experimental mass found: 126.06616973877"
-  [1] "Difference in m/z (dmz in Da): -3.02612304636796e-05"
-  [1] "Difference in m/z (dmz in ppm): -0.240042378240001"
-  [1] "Results saved in: test_results/xic_results/20240315_QCN1_001_03_New_STD.tsv"
-  [1] "Updated TSV file: test_results/xic_results/20240315_QCN1_001_03_New_STD.tsv"
-
-Work dir:
-  /home/proteomics/mygit/nf-core/nf-core-ribomsqc/.nf-test/tests/8343015d32f03c6464fa8f1fa030de25/work/71/afd2f6d3744431509ae9656442217b
-
-Tip: you can replicate the issue by changing to the process work dir and entering the command `bash .command.run`
-Mar-25 16:46:15.697 [main] DEBUG nextflow.Session - Session await > all processes finished
-Mar-25 16:46:15.711 [TaskFinalizer-1] INFO  nextflow.Session - Execution cancelled -- Finishing pending tasks before exit
-Mar-25 16:46:15.721 [Task monitor] DEBUG n.processor.TaskPollingMonitor - <<< barrier arrives (monitor: local) - terminating tasks monitor poll loop
-Mar-25 16:46:15.721 [main] DEBUG nextflow.Session - Session await > all barriers passed
-Mar-25 16:46:15.724 [main] DEBUG nextflow.util.ThreadPoolManager - Thread pool 'TaskFinalizer' shutdown completed (hard=false)
-Mar-25 16:46:15.735 [main] DEBUG n.trace.WorkflowStatsObserver - Workflow completed > WorkflowStats[succeededCount=0; failedCount=1; ignoredCount=0; cachedCount=0; pendingCount=0; submittedCount=0; runningCount=0; retriesCount=0; abortedCount=0; succeedDuration=0ms; failedDuration=12.4s; cachedDuration=0ms;loadCpus=0; loadMemory=0; peakRunning=1; peakCpus=1; peakMemory=6 GB; ]
-Mar-25 16:46:15.735 [main] DEBUG nextflow.trace.TraceFileObserver - Workflow completed -- saving trace file
-Mar-25 16:46:15.738 [main] DEBUG nextflow.trace.ReportObserver - Workflow completed -- rendering execution report
-Mar-25 16:46:16.292 [main] DEBUG nextflow.trace.TimelineObserver - Workflow completed -- rendering execution timeline
-Mar-25 16:46:16.392 [main] DEBUG nextflow.cache.CacheDB - Closing CacheDB done
-Mar-25 16:46:16.403 [main] INFO  org.pf4j.AbstractPluginManager - Stop plugin 'nf-schema@2.3.0'
-Mar-25 16:46:16.404 [main] DEBUG nextflow.plugin.BasePlugin - Plugin stopped nf-schema
-Mar-25 16:46:16.405 [main] DEBUG nextflow.util.ThreadPoolManager - Thread pool 'FileTransfer' shutdown completed (hard=false)
-Mar-25 16:46:16.405 [main] DEBUG nextflow.script.ScriptRunner - > Execution complete -- Goodbye
+  Script_29bac1a2287d32a4: /home/proteomics/mygit/nf-core/nf-core-ribomsqc/.nf-test-8343015d32f03c6464fa8f1fa030de25.nf
+Mar-26 10:22:43.265 [main] DEBUG nextflow.script.ScriptRunner - > Awaiting termination 
+Mar-26 10:22:43.266 [main] DEBUG nextflow.Session - Session await
+Mar-26 10:22:43.515 [Task submitter] DEBUG n.executor.local.LocalTaskHandler - Launch cmd line: /bin/bash -ue .command.run
+Mar-26 10:22:43.518 [Task submitter] INFO  nextflow.Session - [f2/ef60d9] Submitted process > MSNBASXIC (test)
+Mar-26 10:22:55.884 [Task monitor] DEBUG n.processor.TaskPollingMonitor - Task completed > TaskHandler[id: 1; name: MSNBASXIC (test); status: COMPLETED; exit: 0; error: -; workDir: /home/proteomics/mygit/nf-core/nf-core-ribomsqc/.nf-test/tests/8343015d32f03c6464fa8f1fa030de25/work/f2/ef60d9ce3696dc79785c7254eff2c6]
+Mar-26 10:22:55.884 [Task monitor] DEBUG nextflow.util.ThreadPoolBuilder - Creating thread pool 'TaskFinalizer' minSize=10; maxSize=24; workQueue=LinkedBlockingQueue[10000]; allowCoreThreadTimeout=false
+Mar-26 10:22:55.929 [TaskFinalizer-1] DEBUG nextflow.util.ThreadPoolBuilder - Creating thread pool 'PublishDir' minSize=10; maxSize=24; workQueue=LinkedBlockingQueue[10000]; allowCoreThreadTimeout=false
+Mar-26 10:22:55.934 [main] DEBUG nextflow.Session - Session await > all processes finished
+Mar-26 10:22:55.982 [Task monitor] DEBUG n.processor.TaskPollingMonitor - <<< barrier arrives (monitor: local) - terminating tasks monitor poll loop
+Mar-26 10:22:55.982 [main] DEBUG nextflow.Session - Session await > all barriers passed
+Mar-26 10:22:55.984 [main] DEBUG nextflow.util.ThreadPoolManager - Thread pool 'TaskFinalizer' shutdown completed (hard=false)
+Mar-26 10:22:55.985 [main] DEBUG nextflow.util.ThreadPoolManager - Thread pool 'PublishDir' shutdown completed (hard=false)
+Mar-26 10:22:55.995 [main] DEBUG n.trace.WorkflowStatsObserver - Workflow completed > WorkflowStats[succeededCount=1; failedCount=0; ignoredCount=0; cachedCount=0; pendingCount=0; submittedCount=0; runningCount=0; retriesCount=0; abortedCount=0; succeedDuration=12.3s; failedDuration=0ms; cachedDuration=0ms;loadCpus=0; loadMemory=0; peakRunning=1; peakCpus=1; peakMemory=6 GB; ]
+Mar-26 10:22:55.995 [main] DEBUG nextflow.trace.TraceFileObserver - Workflow completed -- saving trace file
+Mar-26 10:22:55.997 [main] DEBUG nextflow.trace.ReportObserver - Workflow completed -- rendering execution report
+Mar-26 10:22:56.550 [main] DEBUG nextflow.trace.TimelineObserver - Workflow completed -- rendering execution timeline
+Mar-26 10:22:56.639 [main] DEBUG nextflow.cache.CacheDB - Closing CacheDB done
+Mar-26 10:22:56.648 [main] INFO  org.pf4j.AbstractPluginManager - Stop plugin 'nf-schema@2.3.0'
+Mar-26 10:22:56.648 [main] DEBUG nextflow.plugin.BasePlugin - Plugin stopped nf-schema
+Mar-26 10:22:56.649 [main] DEBUG nextflow.util.ThreadPoolManager - Thread pool 'FileTransfer' shutdown completed (hard=false)
+Mar-26 10:22:56.649 [main] DEBUG nextflow.script.ScriptRunner - > Execution complete -- Goodbye

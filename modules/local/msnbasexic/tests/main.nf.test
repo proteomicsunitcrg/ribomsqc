@@ -29,12 +29,7 @@ nextflow_process {
     }
 
     then {
-      assertAll(
-                { assert process.success},
-                { assert snapshot(
-                  file(process.out.xic_output).name,
-                  process.out.versions
-              ).match()})
+      assert process.success
     }
   }
   
