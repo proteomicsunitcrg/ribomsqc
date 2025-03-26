@@ -10,7 +10,7 @@ params.nf_test_output  = ""
 
 
 // include test process
-include { MSNBASXIC } from '/home/proteomics/mygit/nf-core/nf-core-ribomsqc/modules/local/msnbasexic/tests/../main.nf'
+include { MSNBASEXIC } from '/home/proteomics/mygit/nf-core/nf-core-ribomsqc/modules/local/msnbasexic/tests/../main.nf'
 
 // define custom rules for JSON that will be generated.
 def jsonOutput =
@@ -46,17 +46,17 @@ workflow {
     //----
 
     //run process
-    MSNBASXIC(*input)
+    MSNBASEXIC(*input)
 
-    if (MSNBASXIC.output){
+    if (MSNBASEXIC.output){
 
         // consumes all named output channels and stores items in a json file
-        for (def name in MSNBASXIC.out.getNames()) {
-            serializeChannel(name, MSNBASXIC.out.getProperty(name), jsonOutput)
+        for (def name in MSNBASEXIC.out.getNames()) {
+            serializeChannel(name, MSNBASEXIC.out.getProperty(name), jsonOutput)
         }	  
       
         // consumes all unnamed output channels and stores items in a json file
-        def array = MSNBASXIC.out as Object[]
+        def array = MSNBASEXIC.out as Object[]
         for (def i = 0; i < array.length ; i++) {
             serializeChannel(i, array[i], jsonOutput)
         }    	
