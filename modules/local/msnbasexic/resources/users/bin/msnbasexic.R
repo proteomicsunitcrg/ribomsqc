@@ -155,8 +155,9 @@ write_results <- function(output_df, file_name) {
 
   # Generate output filename
   sample_name <- tools::file_path_sans_ext(basename(file_name))
-  output_file <- paste0(sample_name, ".tsv")
-
+  #output_file <- paste0(sample_name, ".tsv")
+  output_file <- paste0(sample_name, "_mqc.tsv")
+  
   # Save data to file
   write.table(output_df, output_file, sep = "\t", row.names = FALSE, quote = FALSE)
 

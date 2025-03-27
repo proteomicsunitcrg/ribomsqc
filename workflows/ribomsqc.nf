@@ -6,8 +6,9 @@
 include { paramsSummaryMap       } from 'plugin/nf-schema'
 include { softwareVersionsToYAML } from '../subworkflows/nf-core/utils_nfcore_pipeline'
 include { methodsDescriptionText } from '../subworkflows/local/utils_nfcore_ribomsqc_pipeline'
-include { THERMORAWFILEPARSER } from '../modules/nf-core/thermorawfileparser/main'
-include { MSNBASEXIC } from '../modules/local/msnbasexic/main'
+include { THERMORAWFILEPARSER }   from '../modules/nf-core/thermorawfileparser/main'
+include { MSNBASEXIC }            from '../modules/local/msnbasexic/main'
+include { MULTIQC }               from '../modules/nf-core/multiqc/main'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -52,18 +53,33 @@ workflow RIBOMSQC {
 
     MSNBASEXIC(
         mzml_ch,
-        Channel.value(params.analyte),
-        Channel.value(params.rt_tolerance),
-        Channel.value(params.mz_tolerance),
-        Channel.value(params.ms_level),
-        Channel.value(params.plot_xic_ms1),
-        Channel.value(params.plot_xic_ms2),
-        Channel.value(params.plot_output_path),
-        Channel.value(params.overwrite_tsv)
+        analyte_ch,
+        rt_tol_ch,
+        mz_tol_ch,
+        ms_level_ch,
+        plot_xic_ms1_ch,
+        plot_xic_ms2_ch,
+        plot_output_path_ch,
+        overwrite_tsv_ch
     )
 
     ch_versions = ch_versions.mix(MSNBASEXIC.out.versions)
 
+    xic_files_ch = MSNBASEXIC.out.xic_output.map { it -> it[1] }
+    xic_files_ch.view { "📂 Fitxer XIC per MultiQC → $it" }
+    xic_files_ch.count().view { "🔢 Total fitxers MultiQC: ${it}" }
+
+    //
+    // MODULE: Run MULTIQC
+    //
+    MULTIQC(
+        xic_files_ch,
+        Channel.empty(),
+        Channel.empty(),
+        Channel.empty(),
+        Channel.empty(),
+        Channel.empty()
+    )
 
     //
     // Collate and save software versions
@@ -77,14 +93,8 @@ workflow RIBOMSQC {
         ).set { ch_collated_versions }
 
     emit:
-    versions = ch_versions                     
-    spectra  = THERMORAWFILEPARSER.out.spectra
-    xic_output = MSNBASEXIC.out.xic_output
-
+    versions      = ch_versions                     
+    spectra       = THERMORAWFILEPARSER.out.spectra
+    xic_output    = MSNBASEXIC.out.xic_output
+    multiqc_report = MULTIQC.out.report
 }
-
-/*
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    THE END
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-*/
