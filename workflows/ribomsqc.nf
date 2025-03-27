@@ -33,6 +33,10 @@ workflow RIBOMSQC {
     
     ch_versions = ch_versions.mix(THERMORAWFILEPARSER.out.versions)
 
+    //
+    // MODULE: Run MSNBASEXIC
+    //
+
     mzml_ch = THERMORAWFILEPARSER.out.spectra.map { meta, mzml_file ->
         tuple(
             meta,                      
@@ -66,8 +70,6 @@ workflow RIBOMSQC {
     ch_versions = ch_versions.mix(MSNBASEXIC.out.versions)
 
     xic_files_ch = MSNBASEXIC.out.xic_output.map { it -> it[1] }
-    xic_files_ch.view { "📂 Fitxer XIC per MultiQC → $it" }
-    xic_files_ch.count().view { "🔢 Total fitxers MultiQC: ${it}" }
 
     //
     // MODULE: Run MULTIQC

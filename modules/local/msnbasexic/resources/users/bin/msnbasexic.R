@@ -150,17 +150,35 @@ function_create_output_df <- function(sample_name, rt_target, rt_obs, mz1, mz_ex
   return(output_df)
 }
 
-# Function to write results to a TSV file
+# Function to write results to a TSV file with MultiQC header
 write_results <- function(output_df, file_name) {
-
+  
   # Generate output filename
   sample_name <- tools::file_path_sans_ext(basename(file_name))
-  #output_file <- paste0(sample_name, ".tsv")
   output_file <- paste0(sample_name, "_mqc.tsv")
   
-  # Save data to file
-  write.table(output_df, output_file, sep = "\t", row.names = FALSE, quote = FALSE)
-
+  # Define MultiQC header lines
+  header_lines <- c(
+    "# id: 'qc_table'",
+    "# section_name: 'List of detected nucleosides'",
+    "# plot_type: 'table'"
+  )
+  
+  # Open a connection to the output file
+  con <- file(output_file, open = "wt")
+  
+  # Write header lines
+  writeLines(header_lines, con)
+  
+  # Write a blank line to separate header from table (important!)
+  writeLines("", con)
+  
+  # Write the data frame as TSV
+  write.table(output_df, con, sep = "\t", row.names = FALSE, quote = FALSE)
+  
+  # Close the file connection
+  close(con)
+  
   print(paste("Results saved in:", output_file))
 }
 
