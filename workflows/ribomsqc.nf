@@ -73,13 +73,13 @@ workflow RIBOMSQC {
     // MODULE: Run MULTIQC
     //
     MULTIQC(
-        xic_files_ch,
-        Channel.empty(),
-        Channel.empty(),
-        Channel.empty(),
-        Channel.empty(),
-        Channel.empty()
-    )
+            xic_files_ch,
+            [],
+            [],
+            [],
+            [],
+            []
+        )
 
     //
     // Collate and save software versions
