@@ -19,7 +19,7 @@
 
 ## Introduction
 
-**nf-core/ribomsqc** is a bioinformatics pipeline that processes RAW files from mass spectrometry instruments, converts them to mzML format, extracts XICs for selected analytes, generates plots, and summarizes outputs via MultiQC. It is tailored for quality control of ribonucleoside analysis.
+**nf-core/ribomsqc** is a bioinformatics pipeline that processes `RAW` files from mass spectrometry instruments, converts them to `mzML` format, extracts `XIC`s for selected analytes, generates plots, and summarizes outputs via MultiQC. It is tailored for quality control of ribonucleoside analysis.
 
 ## Usage
 
