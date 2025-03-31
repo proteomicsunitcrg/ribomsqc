@@ -8,24 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Initial release of nf-core/ribomsqc, created with the [nf-core](https://nf-co.re/) template.
 
 ### `Added`
-- Initial implementation of the pipeline.
-- Support for ThermoRawFileParser module to convert RAW to mzML.
-- Custom `MSNBASEXIC` module to extract and plot XICs.
-- Parameters for XIC configuration: analyte, mz/rt tolerance, msLevel, plotting.
-- Support for `MultiQC` as subworkflow to aggregate results.
-- Singularity and Docker support.
-- Input schema validation via `nextflow_schema.json`.
-- Custom samplesheet CSV input with three required columns.
-- Version tracking via `software_versions.yml`.
-
-### `Fixed`
-- N/A – First release.
+- [8d4c4e3](https://github.com/proteomicsunitcrg/ribomsqc/commit/8d4c4e368e0f774b246002e5e73c8bf53aab4391) - Initial implementation of the pipeline.
+- [b7ea318](https://github.com/proteomicsunitcrg/ribomsqc/commit/b7ea318d7ac3422e5bf6e87a769af6284d3024aa) - Support for ThermoRawFileParser module to convert RAW to mzML.
+- [9a16ef6](https://github.com/proteomicsunitcrg/ribomsqc/commit/9a16ef67a1a4b3d675ddbfc5615158b321eba7bc) - Custom `MSNBASEXIC` module to extract and plot XICs.
+- [5563206](https://github.com/proteomicsunitcrg/ribomsqc/commit/55632066ab4eb1191a52b71e887d979e1e8ca6e2) - Support for `MultiQC` as module to aggregate results.
 
 ### `Dependencies`
-- ThermoRawFileParser
-- bioconductor-msnbase (R)
-- MultiQC
-- nf-core/tools v3.2.0+
 
-### `Deprecated`
-- Nothing deprecated in this version.
+| Dependency                 | Version     | 
+| -----------------------    | ----------- |
+| `ThermoRawFileParser`      | 1.4.5       |
+| `bioconductor-msnbase (R)` | 2.32.0      | 
+| `MultiQC`                  | 1.28     | 
