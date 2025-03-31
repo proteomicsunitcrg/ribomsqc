@@ -34,7 +34,7 @@ id,raw_file
 ```
 
 - `id`: Sample identifier
-- `file`: Path to the RAW file
+- `file`: Path to the `RAW` file
 
 Now, you can run the pipeline using:
 
