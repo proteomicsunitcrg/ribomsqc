@@ -29,7 +29,7 @@ process MSNBASEXIC {
 
     script:
     """
-    Rscript ${workflow.projectDir}/modules/local/msnbasexic/resources/users/bin/msnbasexic.R \\
+    msnbasexic.R \\
     --file_name ${mzml_file} \\
     --tsv_name ${tsv_file} \\
     --output_dir ${params.outdir}/xic_results \\

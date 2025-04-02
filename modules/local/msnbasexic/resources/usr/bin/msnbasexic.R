@@ -1,3 +1,5 @@
+#!/usr/bin/env Rscript
+
 suppressPackageStartupMessages(library(MSnbase))
 suppressPackageStartupMessages(library(pracma))  
 suppressPackageStartupMessages(library(ggplot2))
