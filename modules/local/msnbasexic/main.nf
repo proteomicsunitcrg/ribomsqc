@@ -22,8 +22,8 @@ process MSNBASEXIC {
     script:
     """
     msnbasexic.R \\
-      --file_name ${mzml_file} \\
-      --tsv_name ${tsv_file} \\
-      ${task.ext.args.collect { k,v -> "$k $v" }.join(' \\\n  ')}
+        --file_name ${mzml_file} \\
+        --tsv_name ${tsv_file} \\
+        ${task.ext.args}
     """
 }
