@@ -20,10 +20,11 @@ process MSNBASEXIC {
         task.ext.when == null || task.ext.when
 
     script:
+    def args = task.ext.args ?: ''
     """
     msnbasexic.R \\
-        --file_name ${mzml_file} \\
-        --tsv_name ${tsv_file} \\
-        ${task.ext.args}
+      --file_name ${mzml_file} \\
+      --tsv_name ${tsv_file} \\
+      ${args}
     """
 }
