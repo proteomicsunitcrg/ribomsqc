@@ -37,7 +37,7 @@ workflow RIBOMSQC {
     // MODULE: Run MSNBASEXIC
     //
     mzml_ch             = THERMORAWFILEPARSER.out.spectra
-    analytes_tsv_ch     = Channel.value(file(params.analytes_tsv))
+    analytes_tsv_ch     = Channel.value(file(params.analytes_tsv, checkIfExists: true)))
     analyte_ch          = Channel.value(params.analyte)
     rt_tol_ch           = Channel.value(params.rt_tolerance)
     mz_tol_ch           = Channel.value(params.mz_tolerance)
