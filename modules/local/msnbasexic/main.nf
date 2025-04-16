@@ -12,14 +12,6 @@ process MSNBASEXIC {
     input:
         tuple val(meta), path(mzml_file)
         path tsv_file
-        val analyte
-        val rt_tol_sec
-        val mz_tol_ppm
-        val msLevel
-        val plot_xic_ms1
-        val plot_xic_ms2
-        val plot_output_path
-        val overwrite_tsv
 
     output:
         tuple val(meta), path("*.tsv"), emit: xic_output

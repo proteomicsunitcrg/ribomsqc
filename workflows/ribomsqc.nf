@@ -49,15 +49,7 @@ workflow RIBOMSQC {
     
     MSNBASEXIC(
         mzml_ch,
-        analytes_tsv_ch,
-        analyte_ch,
-        rt_tol_ch,
-        mz_tol_ch,
-        ms_level_ch,
-        plot_xic_ms1_ch,
-        plot_xic_ms2_ch,
-        plot_output_path_ch,
-        overwrite_tsv_ch
+        analytes_tsv_ch
     )
 
     ch_versions = ch_versions.mix(MSNBASEXIC.out.versions)
