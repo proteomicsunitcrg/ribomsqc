@@ -36,45 +36,8 @@ input:
 
     - tsv_file:
         type: file
-        description: TSV file containing analyte information
+        description: TSV file containing analyte/compound information
         pattern: "*.tsv"
-
-    - script:
-        type: file
-        description: R script to be executed
-        pattern: "*.R"
-
-    - analyte:
-        type: string
-        description: Name of the analyte to extract
-
-    - rt_tol_sec:
-        type: integer
-        description: Retention time tolerance in seconds
-
-    - mz_tol_ppm:
-        type: integer
-        description: Mass tolerance in ppm
-
-    - msLevel:
-        type: integer
-        description: MS level to analyze (1 or 2)
-
-    - plot_xic_ms1:
-        type: boolean
-        description: Whether to generate XIC plot for MS1
-
-    - plot_xic_ms2:
-        type: boolean
-        description: Whether to generate XIC plot for MS2
-
-    - plot_output_path:
-        type: string
-        description: Path where the XIC plot should be saved
-
-    - overwrite_tsv:
-        type: boolean
-        description: Whether to overwrite or append to the output TSV file
 
 output:
   - tsv:
