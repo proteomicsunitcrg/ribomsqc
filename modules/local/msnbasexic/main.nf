@@ -10,7 +10,8 @@ process MSNBASEXIC {
     'community.wave.seqera.io/library/bioconductor-msnbase_r-ggplot2_r-optparse_r-pracma_r-readr:83cd263d3bfd0c9e' }"
 
     input:
-        tuple val(meta), path(mzml_file), path(tsv_file)
+        tuple val(meta), path(mzml_file)
+        path tsv_file
         val analyte
         val rt_tol_sec
         val mz_tol_ppm

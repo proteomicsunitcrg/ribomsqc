@@ -36,16 +36,8 @@ workflow RIBOMSQC {
     //
     // MODULE: Run MSNBASEXIC
     //
-
-    mzml_ch = THERMORAWFILEPARSER.out.spectra.map { meta, mzml_file ->
-        tuple(
-            meta,                      
-            mzml_file,
-            file(params.analytes_tsv)
-        )
-    }
-
-    tsv_ch              = Channel.value(file(params.analytes_tsv))
+    mzml_ch             = THERMORAWFILEPARSER.out.spectra
+    analytes_tsv_ch     = Channel.value(file(params.analytes_tsv))
     analyte_ch          = Channel.value(params.analyte)
     rt_tol_ch           = Channel.value(params.rt_tolerance)
     mz_tol_ch           = Channel.value(params.mz_tolerance)
@@ -54,9 +46,10 @@ workflow RIBOMSQC {
     plot_xic_ms2_ch     = Channel.value(params.plot_xic_ms2)
     plot_output_path_ch = Channel.value(params.plot_output_path)
     overwrite_tsv_ch    = Channel.value(params.overwrite_tsv)
-
+    
     MSNBASEXIC(
         mzml_ch,
+        analytes_tsv_ch,
         analyte_ch,
         rt_tol_ch,
         mz_tol_ch,
