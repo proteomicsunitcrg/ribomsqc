@@ -11,7 +11,7 @@ The directories listed below will be created in the results directory after the 
 The pipeline is built using [Nextflow](https://www.nextflow.io/) and processes data using the following steps:
 
 - Parse RAW files using ThermoRawFileParser
-- Perform XIC extraction and plotting using MSNBASEXIC
+- [Perform XIC extraction and plotting using MSNBASEXIC](#xic-results)
 - Aggregate QC metrics with MultiQC
 - [Pipeline information](#pipeline-information) - Report metrics generated during the workflow execution
 
