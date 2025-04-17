@@ -46,6 +46,8 @@ nextflow run nf-core/ribomsqc \
   -profile singularity
 ```
 
+Alternatively to specifying parameters on the command line, you can define them in a separate parameters file (e.g., `params.json` or `params.yaml`). This can help simplify execution and improve reproducibility, especially for complex or repeated runs.
+
 ## Minimal params file example
 
 ```yaml title="params.yaml"
