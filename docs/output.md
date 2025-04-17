@@ -12,7 +12,7 @@ The pipeline is built using [Nextflow](https://www.nextflow.io/) and processes d
 
 - Parse RAW files using ThermoRawFileParser
 - [Perform XIC extraction and plotting using MSNBASEXIC](#xic-results)
-- Aggregate QC metrics with MultiQC
+- [Aggregate QC metrics with MultiQC](#multiqc-report)
 - [Pipeline information](#pipeline-information) - Report metrics generated during the workflow execution
 
 ---
