@@ -40,8 +40,8 @@ Now, you can run the pipeline using:
 
 ```bash
 nextflow run nf-core/ribomsqc \
-  --input /home/proteomics/mydata/csv/samplesheet.csv \
-  --analytes_tsv /home/proteomics/mydata/tsv/qcn1.tsv \
+  --input samplesheet.csv \
+  --analytes_tsv qcn1.tsv \
   --analyte m3C \
   --rt_tolerance 150 \
   --mz_tolerance 20 \
