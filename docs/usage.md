@@ -16,7 +16,7 @@ Before running the pipeline, you need to provide a samplesheet CSV file containi
 --input '[path to samplesheet.csv]'
 ```
 
-The samplesheet must contain a header and three columns:
+The samplesheet must contain a header and two columns:
 
 ```csv title="samplesheet.csv"
 id,raw_file
