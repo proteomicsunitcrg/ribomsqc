@@ -131,10 +131,11 @@ format_custom <- function(x) {
 }
 
 #  Organizes extracted results into a structured table. 
-function_create_output_df <- function(sample_name, rt_target, rt_obs, mz1, mz_exp_result, intensity_mz1, area_mz1, fwhm, ppp){
+function_create_output_df <- function(sample_name, analyte, rt_target, rt_obs, mz1, mz_exp_result, intensity_mz1, area_mz1, fwhm, ppp){
 
   output_df <- data.frame(
     Sample = sample_name,
+    short_name = analyte,
     Expected_RT_sec = rt_target,
     Observed_RT_sec = rt_obs,
     dRT_sec = rt_obs - rt_target,
@@ -264,20 +265,61 @@ if (is.null(opt$file_name) || is.null(opt$tsv_name) || is.null(opt$analyte_name)
 }
 
 
+
 print(paste("Analyte:", opt$analyte_name))
-df <- read.delim(opt$tsv_name, sep = "\t", header = TRUE, stringsAsFactors = FALSE)
-analyte_data <- get_analyte_data(df, opt$analyte_name)
-mz1 <- assign_mz1(analyte_data, opt$msLevel)
-mz_tol <- (opt$mz_tol_ppm * mz1) / 10^6  # to Da
-print(paste("mz_tol in DA:", mz_tol))
-rt_target <- analyte_data$rt_target
-print("Mode: monoisotopic peak.")
+df <- read.delim(opt$tsv_name, sep = "	", header = TRUE, stringsAsFactors = FALSE)
+
+if (opt$analyte_name == "all") {
+  analyte_names <- df$short_name
+} else {
+  analyte_names <- c(opt$analyte_name)
+}
 
 print(paste("Loading mzML file:", opt$file_name))
 ms_data <- readMSData(opt$file_name, mode = "onDisk")
 print("File loaded!")
 
-xic <- compute_xic(ms_data, mz1, rt_target, opt$rt_tol_sec, mz_tol, opt$msLevel)
+all_results <- list()
+
+for (analyte in analyte_names) {
+  print(paste("Processing analyte:", analyte))
+  analyte_data <- get_analyte_data(df, analyte)
+  mz1 <- assign_mz1(analyte_data, opt$msLevel)
+  mz_tol <- (opt$mz_tol_ppm * mz1) / 10^6
+  rt_target <- analyte_data$rt_target
+
+  xic <- compute_xic(ms_data, mz1, rt_target, opt$rt_tol_sec, mz_tol, opt$msLevel)
+  rt_values <- rtime(xic[[1]])
+  int <- intensity(xic[[1]])
+
+  valid_int_idx <- which(!is.na(int) & int > 0)
+  if (length(valid_int_idx) > 0) {
+    max_idx <- valid_int_idx[which.max(int[valid_int_idx])]
+    rt_obs <- rt_values[max_idx]
+    intensity_mz1 <- int[max_idx]
+  } else {
+    rt_obs <- NA
+    intensity_mz1 <- NA
+  }
+
+  ppp_value <- calculate_ppp_custom(rt_values, int, threshold_ratio = 0.01)
+  fwhm_value <- calculate_fwhm(rt_values, int)
+  area_mz1 <- compute_xic_area(rt_values, int)
+  mz_exp_result <- find_mz_for_intensity_obs(ms_data, c(mz1 - mz_tol, mz1 + mz_tol), rt_obs, intensity_mz1)
+
+  sample_name <- tools::file_path_sans_ext(basename(opt$file_name))
+  result_row <- function_create_output_df(
+    sample_name, analyte, rt_target, rt_obs, mz1, mz_exp_result,
+    intensity_mz1, area_mz1, fwhm_value, ppp_value
+  )
+
+  all_results[[analyte]] <- result_row
+
+  cat(paste0("Result for '", analyte, "' added to cumulative TSV output.
+"))
+}
+
+output_df <- do.call(rbind, all_results)
 
 # Get the retention time and intensity values
 rt_values <- rtime(xic[[1]])  
@@ -340,12 +382,6 @@ sample_name <- tools::file_path_sans_ext(basename(opt$file_name))
 if (!dir.exists(opt$output_dir)) {
   dir.create(opt$output_dir, recursive = TRUE)
 }
-
-# Create output data frame
-output_df <- function_create_output_df(
-  sample_name, rt_target, rt_obs, mz1, mz_exp_result,
-  intensity_mz1, area_mz1, fwhm_value, ppp_value
-)
 
 # Force scientific notation globally
 options(scipen = 999)
