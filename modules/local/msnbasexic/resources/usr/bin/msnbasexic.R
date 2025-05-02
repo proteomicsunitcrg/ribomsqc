@@ -10,7 +10,7 @@ suppressPackageStartupMessages(library(jsonlite))
 suppressPackageStartupMessages(library(glue))
 
 # Define metrics to be exported to JSON
-json_metrics <- c("Log2_Total_Area", "dmz_ppm", "dRT_sec", "FWHM", "PPP")
+json_metrics <- c("Log2_Total_Area", "dmz_ppm", "Observed_RT_sec", "dRT_sec", "FWHM", "PPP")
 
 # Define command-line options
 option_list <- list(
@@ -29,20 +29,28 @@ option_list <- list(
 
 # Parse command-line arguments
 opt <- parse_args(OptionParser(option_list = option_list))
+opt$plot_xic_ms1 <- as.logical(opt$plot_xic_ms1)
+opt$plot_xic_ms2 <- as.logical(opt$plot_xic_ms2)
+opt$overwrite_tsv <- as.logical(opt$overwrite_tsv)
 
 # Create output directory if it does not exist
 if (!is.null(opt$output_dir) && !dir.exists(opt$output_dir)) {
   dir.create(opt$output_dir, recursive = TRUE)
+  message(glue("Created output directory: {opt$output_dir}"))
 }
 
 # Read analyte data
 df <- read.delim(opt$tsv_name, sep = "\t", header = TRUE, stringsAsFactors = FALSE)
+message(glue("Read {nrow(df)} analytes from TSV: {opt$tsv_name}"))
 
 # Determine analytes to process
 analyte_names <- if (opt$analyte_name == "all") df$short_name else c(opt$analyte_name)
+message(glue("Analytes to process: {paste(analyte_names, collapse = ', ')}"))
 
 # Load mzML data
+message(glue("Loading mzML file: {opt$file_name}"))
 ms_data <- readMSData(opt$file_name, mode = "onDisk")
+message("MS data loaded.")
 
 # Define function to extract analyte-specific parameters
 get_analyte_data <- function(df, analyte) {
@@ -51,41 +59,75 @@ get_analyte_data <- function(df, analyte) {
   list(mz1 = analyte_data$mz_M0, ms2_mz = analyte_data$ms2_mz, rt_target = analyte_data$rt_teoretical)
 }
 
-# Assign correct m/z based on MS level
+# Assign m/z value based on MS level
 assign_mz1 <- function(analyte_data, msLevel) {
-  if (msLevel == 1) as.numeric(analyte_data$mz1) else as.numeric(analyte_data$ms2_mz)
+  if (msLevel == 1) {
+    as.numeric(analyte_data$mz1)
+  } else {
+    as.numeric(analyte_data$mz1)  # Use precursor m/z for MS2 as well
+  }
 }
 
-# Extract chromatographic signal (XIC)
-compute_xic <- function(ms_data, mz1, rt_target, rt_tol_sec, mz_tol, msLevel) {
+# Compute XIC for given m/z and retention time
+compute_xic <- function(ms_data, mz1, rt_target, rt_tol_sec, mz_tol, msLevel, ppm_tol = 20) {
+  rt_window <- c(rt_target - rt_tol_sec, rt_target + rt_tol_sec)
+  mz_window <- c(mz1 - mz_tol, mz1 + mz_tol)
+
   if (msLevel == 1) {
-    chromatogram(ms_data, mz = c(mz1 - mz_tol, mz1 + mz_tol), rt = c(rt_target - rt_tol_sec, rt_target + rt_tol_sec), msLevel = 1, aggregationFun = "mean")
+    # MS1: extract chromatogram directly using mz and RT window
+    chromatogram(ms_data, mz = mz_window, rt = rt_window, msLevel = 1, aggregationFun = "mean")
   } else {
-    ms2_data <- filterMsLevel(ms_data, msLevel = 2)
-    chromatogram(ms2_data, mz = c(mz1 - mz_tol, mz1 + mz_tol), rt = c(rt_target - rt_tol_sec, rt_target + rt_tol_sec), msLevel = 2, aggregationFun = "sum")
+    # MS2: filter manually by RT and precursor m/z
+    ms2_data <- ms_data |>
+      filterMsLevel(2) |>
+      filterRt(rt_window)
+
+    # Extract precursor m/z for each spectrum
+    prec_mz <- precursorMz(ms2_data)
+
+    # Keep only spectra with non-NA precursor m/z within target range
+    valid_idx <- which(!is.na(prec_mz) & prec_mz >= mz_window[1] & prec_mz <= mz_window[2])
+
+    # Logging: how many MS2 spectra matched
+    message(glue("Found {length(valid_idx)} MS2 spectra with precursor m/z within ±{round(ppm_tol, 1)} ppm of {mz1}"))
+
+    if (length(valid_idx) == 0) {
+      warning("No MS2 spectra matched precursor m/z within the specified ppm.")
+      return(list(NULL))
+    }
+
+    # Keep only matching MS2 spectra
+    ms2_data <- ms2_data[valid_idx]
+
+    # Build chromatogram manually by summing intensities per spectrum
+    rt_vals <- rtime(ms2_data)
+    int_vals <- sapply(spectra(ms2_data), function(s) sum(intensity(s), na.rm = TRUE))
+
+    chrom <- new("Chromatogram", rtime = rt_vals, intensity = int_vals)
+    list(chrom)
   }
 }
 
 # Extract max intensity m/z at observed retention time
-find_mz_for_intensity_obs <- function(ms_data, mz, rt_obs, intensity_mz1) {
-  spectra_near_rt <- filterRt(ms_data, rt = c(rt_obs - 1, rt_obs + 1))
-  if (length(spectra_near_rt) == 0) stop("No spectra found near RT")
+find_mz_for_intensity_obs <- function(ms_data, mz, rt_obs, intensity_mz1, msLevel) {
+  data_filtered <- ms_data |>
+    filterMsLevel(msLevel) |>
+    filterRt(rt = c(rt_obs - 1, rt_obs + 1))
+
+  if (length(data_filtered) == 0) stop("No spectra found near RT")
+
   all_mz_exp <- all_intensities <- c()
-  for (i in seq_along(spectra_near_rt)) {
-    spec <- spectra(spectra_near_rt)[[i]]
+
+  for (spec in spectra(data_filtered)) {
     valid_idx <- mz(spec) >= mz[1] & mz(spec) <= mz[2]
     all_mz_exp <- c(all_mz_exp, mz(spec)[valid_idx])
     all_intensities <- c(all_intensities, intensity(spec)[valid_idx])
   }
+
   if (length(all_mz_exp) == 0) stop("No m/z values in range")
+
   df <- data.frame(mz_exp = all_mz_exp, intensity = all_intensities)
   df[which.min(abs(df$intensity - intensity_mz1)), "mz_exp"]
-}
-
-# Trapezoidal area calculation
-compute_xic_area <- function(rt_values, intensities) {
-  valid <- which(!is.na(rt_values) & !is.na(intensities))
-  if (length(valid) > 1) trapz(rt_values[valid], intensities[valid]) else NA
 }
 
 # Format numeric values for consistency
@@ -128,11 +170,28 @@ calculate_fwhm <- function(rt_values, intensities) {
   rt_values[max(idx)] - rt_values[min(idx)]
 }
 
+# Trapezoidal area calculation
+compute_xic_area <- function(rt_values, intensities) {
+  valid <- which(!is.na(rt_values) & !is.na(intensities))
+  if (length(valid) > 1) {
+    trapz(rt_values[valid], intensities[valid])
+  } else {
+    NA
+  }
+}
+
 # Plot chromatogram
-plot_xic <- function(rt_values, intensities, output_file) {
+plot_xic <- function(rt_values, intensities, output_file, analyte_name = NULL, ms_level = NULL, mz_tol = NULL, rt_tol_sec = NULL, sample_name = NULL, mz_tol_ppm = NULL) {
   if (length(rt_values) == 0 || length(intensities) == 0) return(NULL)
   xic_df <- data.frame(RT = rt_values, Intensity = intensities)
-  p <- ggplot(xic_df, aes(x = RT, y = Intensity)) + geom_point(size = 1.6) + theme_minimal()
+  xic_df <- xic_df[complete.cases(xic_df), ]
+  plot_title <- glue("XIC for {analyte_name} (MS{ms_level})")
+  plot_subtitle <- glue("Sample: {sample_name} | mz tol: ±{mz_tol_ppm} ppm | rt tol: ±{round(rt_tol_sec, 1)}s (±{round(2*rt_tol_sec, 0)}s window)")
+  p <- ggplot(xic_df, aes(x = RT, y = Intensity)) +
+    geom_point(size = 1.6) +
+    geom_line(color = "blue", linewidth = 0.8) +
+    ggtitle(plot_title, subtitle = plot_subtitle) +
+    theme_minimal() + xlab("Retention Time (sec)") + ylab("Intensity")
   ggsave(output_file, plot = p, width = 8, height = 6, dpi = 300, bg = "white")
 }
 
@@ -165,12 +224,17 @@ update_metric_json <- function(metric_name, analyte, sample_name, value) {
 # Main processing loop
 all_results <- list()
 for (analyte in analyte_names) {
+  message(glue("Processing analyte: {analyte}"))
   analyte_data <- get_analyte_data(df, analyte)
   mz1 <- assign_mz1(analyte_data, opt$msLevel)
   mz_tol <- (opt$mz_tol_ppm * mz1) / 1e6
   rt_target <- analyte_data$rt_target
+  message(glue("  mz1 = {mz1}, rt_target = {rt_target}, mz_tol = {mz_tol}, msLevel = {opt$msLevel}"))
   xic <- compute_xic(ms_data, mz1, rt_target, opt$rt_tol_sec, mz_tol, opt$msLevel)
-  if (length(xic) == 0 || is.null(xic[[1]])) next
+  if (length(xic) == 0 || is.null(xic[[1]])) {
+    message(glue("  No XIC signal found for analyte {analyte}. Skipping."))
+    next
+  }
   rt_values <- rtime(xic[[1]])
   int <- intensity(xic[[1]])
 
@@ -185,14 +249,47 @@ for (analyte in analyte_names) {
   ppp_value <- calculate_ppp_custom(rt_values, int, threshold_ratio = 0.01)
   fwhm_value <- calculate_fwhm(rt_values, int)
   area_mz1 <- compute_xic_area(rt_values, int)
-  mz_exp_result <- find_mz_for_intensity_obs(ms_data, c(mz1 - mz_tol, mz1 + mz_tol), rt_obs, intensity_mz1)
+  
+  mz_exp_result <- tryCatch({
+    find_mz_for_intensity_obs(ms_data, c(mz1 - mz_tol, mz1 + mz_tol), rt_obs, intensity_mz1, opt$msLevel)
+  }, error = function(e) {
+    warning(glue("Could not determine observed m/z for {analyte}: {e$message}"))
+    NA
+  })
+
   sample_base <- tools::file_path_sans_ext(basename(opt$file_name))
   sample_name <- sub("\\.raw$", "", sample_base)
   result_row <- function_create_output_df(sample_name, analyte, rt_target, rt_obs, mz1, mz_exp_result, intensity_mz1, area_mz1, fwhm_value, ppp_value)
   all_results[[analyte]] <- result_row
+  message(glue("  Calculated metrics for {analyte}:"))
+  message(glue("    Observed RT: {rt_obs}"))
+  message(glue("    Observed MZ: {mz_exp_result}"))
+  message(glue("    Max Intensity: {intensity_mz1}"))
+  message(glue("    Area: {area_mz1}"))
+  message(glue("    Log2 Area: {ifelse(!is.na(area_mz1) & area_mz1 > 0, log2(area_mz1), NA)}"))
+  message(glue("    FWHM: {fwhm_value}"))
+  message(glue("    PPP: {ppp_value}"))
+
+  if (!is.null(opt$plot_output_path)) {
+    should_plot_ms1 <- opt$plot_xic_ms1 && opt$msLevel == 1
+    should_plot_ms2 <- opt$plot_xic_ms2 && opt$msLevel == 2
+    if (should_plot_ms1 || should_plot_ms2) {
+      dir.create(dirname(opt$plot_output_path), recursive = TRUE, showWarnings = FALSE)
+      message(glue("  Saving XIC plot to: {opt$plot_output_path}"))
+      plot_xic(rt_values, int, opt$plot_output_path,
+               analyte_name = analyte,
+               ms_level = opt$msLevel,
+               mz_tol = mz_tol,
+               rt_tol_sec = opt$rt_tol_sec,
+               sample_name = sample_name,
+               mz_tol_ppm = opt$mz_tol_ppm)
+    }
+  }
+
   for (metric in json_metrics) {
     if (metric %in% colnames(result_row)) {
       update_metric_json(metric, analyte, sample_name, result_row[[metric]])
+      message(glue("    Updated JSON metric: {metric}"))
     }
   }
 }
