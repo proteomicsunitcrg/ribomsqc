@@ -82,9 +82,6 @@ workflow RIBOMSQC {
             .mix(ch_mqc_jsons_previous)
             .distinct()
             .collect()
-            .map { paths -> 
-                tuple("merge", paths) 
-            }
 
         MERGEJSONS(ch_merge_input)
 
