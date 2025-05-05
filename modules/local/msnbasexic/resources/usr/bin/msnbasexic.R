@@ -12,6 +12,9 @@ suppressPackageStartupMessages(library(glue))
 # Define metrics to be exported to JSON
 json_metrics <- c("Log2_Total_Area", "dmz_ppm", "Observed_RT_sec", "dRT_sec", "FWHM", "PPP")
 
+# PPP constant:  
+PPP_THRESHOLD_RATIO <- 0.05
+
 # Define command-line options
 option_list <- list(
   make_option(c("--file_name"), type = "character", help = "Input mzML file path"),
@@ -163,11 +166,45 @@ calculate_ppp_custom <- function(rt_values, intensities, threshold_ratio = 0.5) 
 }
 
 calculate_fwhm <- function(rt_values, intensities) {
-  if (length(rt_values) < 2 || all(is.na(intensities))) return(NA)
+  if (length(rt_values) < 2 || all(is.na(intensities))) return(list(fwhm = NA, left_rt = NA, right_rt = NA))
+
   half_max <- max(intensities, na.rm = TRUE) / 2
-  idx <- which(intensities >= half_max)
-  if (length(idx) < 2) return(NA)
-  rt_values[max(idx)] - rt_values[min(idx)]
+
+  ord <- order(rt_values)
+  rt_values <- rt_values[ord]
+  intensities <- intensities[ord]
+
+  peak_idx <- which.max(intensities)
+
+  left_rt <- NA
+  for (i in seq(peak_idx, 2, by = -1)) {
+    if (intensities[i - 1] < half_max && intensities[i] >= half_max) {
+      x1 <- rt_values[i - 1]
+      x2 <- rt_values[i]
+      y1 <- intensities[i - 1]
+      y2 <- intensities[i]
+      left_rt <- x1 + (half_max - y1) * (x2 - x1) / (y2 - y1)
+      break
+    }
+  }
+
+  right_rt <- NA
+  for (i in seq(peak_idx, length(intensities) - 1)) {
+    if (intensities[i + 1] < half_max && intensities[i] >= half_max) {
+      x1 <- rt_values[i]
+      x2 <- rt_values[i + 1]
+      y1 <- intensities[i]
+      y2 <- intensities[i + 1]
+      right_rt <- x1 + (half_max - y1) * (x2 - x1) / (y2 - y1)
+      break
+    }
+  }
+
+  if (is.na(left_rt) || is.na(right_rt)) {
+    return(list(fwhm = NA, left_rt = left_rt, right_rt = right_rt))
+  }
+
+  return(list(fwhm = right_rt - left_rt, left_rt = left_rt, right_rt = right_rt))
 }
 
 # Trapezoidal area calculation
@@ -185,29 +222,34 @@ plot_xic <- function(rt_values, intensities, output_file, analyte_name = NULL, m
   
   xic_df <- data.frame(RT = rt_values, Intensity = intensities)
   xic_df <- xic_df[complete.cases(xic_df), ]
+  xic_df <- xic_df[order(xic_df$RT), ]
 
   max_idx <- which.max(xic_df$Intensity)
   max_rt <- xic_df$RT[max_idx]
   max_intensity <- xic_df$Intensity[max_idx]
 
-  # Calcular FWHM i PPP
-  fwhm <- calculate_fwhm(xic_df$RT, xic_df$Intensity)
-  ppp <- calculate_ppp_custom(xic_df$RT, xic_df$Intensity, threshold_ratio = 0.01)
-
-  # Punts per FWHM
   half_max <- max_intensity / 2
-  above_half_idx <- which(xic_df$Intensity >= half_max)
-  if (length(above_half_idx) >= 2) {
-    fwhm_start_rt <- xic_df$RT[min(above_half_idx)]
-    fwhm_end_rt <- xic_df$RT[max(above_half_idx)]
-  } else {
-    fwhm_start_rt <- NA
-    fwhm_end_rt <- NA
+  ppp <- calculate_ppp_custom(xic_df$RT, xic_df$Intensity, threshold_ratio = PPP_THRESHOLD_RATIO)   
+
+  # Get FWHM and edges
+  fwhm_data <- calculate_fwhm(xic_df$RT, xic_df$Intensity)
+  fwhm <- fwhm_data$fwhm
+  left_rt <- fwhm_data$left_rt
+  right_rt <- fwhm_data$right_rt
+
+  # Create FWHM line with interpolated points
+  fwhm_line <- NULL
+  if (!is.na(left_rt) && !is.na(right_rt)) {
+    fwhm_line <- data.frame(
+      RT = seq(left_rt, right_rt, length.out = 100),
+      Intensity = rep(half_max, 100)
+    )
   }
 
-  # Valor de llindar per PPP
-  ppp_threshold <- max_intensity * 0.01
+  # PPP threshold
+  ppp_threshold <- max_intensity * PPP_THRESHOLD_RATIO
 
+  # Titles
   plot_title <- glue("XIC for {analyte_name} (MS{ms_level})")
   plot_subtitle <- glue("Sample: {sample_name} | mz tol: ±{mz_tol_ppm} ppm | rt tol: ±{round(rt_tol_sec, 1)}s")
 
@@ -218,13 +260,14 @@ plot_xic <- function(rt_values, intensities, output_file, analyte_name = NULL, m
     annotate("text", x = max_rt, y = max_intensity, label = "Max", vjust = -1, hjust = 1, size = 3.5) +
     annotate("text", x = Inf, y = Inf, label = glue("FWHM: {round(fwhm, 2)} sec\nPPP: {ppp}"), 
              hjust = 1.1, vjust = 1.3, size = 4, color = "black") +
-    # Línia FWHM
-    {if (!is.na(fwhm_start_rt) && !is.na(fwhm_end_rt)) geom_segment(aes(x = fwhm_start_rt, xend = fwhm_end_rt,
-                                                                         y = half_max, yend = half_max),
-                                                                    color = "darkgreen", linetype = "dotted", linewidth = 1)} +
-    # Línia de llindar per PPP
+    # Improved FWHM visual
+    {if (!is.null(fwhm_line)) geom_line(data = fwhm_line, aes(x = RT, y = Intensity),
+                                        inherit.aes = FALSE, color = "darkgreen",
+                                        linetype = "dotted", linewidth = 1)} +
+    # PPP threshold line
     geom_hline(yintercept = ppp_threshold, color = "gray40", linetype = "dotdash") +
-    annotate("text", x = -Inf, y = ppp_threshold, label = glue("PPP threshold (1%)"), hjust = -0.1, vjust = -0.5, size = 3.5, color = "gray30") +
+    annotate("text", x = -Inf, y = ppp_threshold, label = "PPP threshold (1%)", 
+             hjust = -0.1, vjust = -0.5, size = 3.5, color = "gray30") +
     ggtitle(plot_title, subtitle = plot_subtitle) +
     xlab("Retention Time (sec)") + ylab("Intensity") +
     theme_minimal()
@@ -283,8 +326,9 @@ for (analyte in analyte_names) {
   max_idx <- which.max(int)
   rt_obs <- rt_values[max_idx]
   intensity_mz1 <- int[max_idx]
-  ppp_value <- calculate_ppp_custom(rt_values, int, threshold_ratio = 0.01)
-  fwhm_value <- calculate_fwhm(rt_values, int)
+  ppp_value <- calculate_ppp_custom(rt_values, int, threshold_ratio = PPP_THRESHOLD_RATIO)
+  fwhm_data <- calculate_fwhm(rt_values, int)
+  fwhm_value <- fwhm_data$fwhm
   area_mz1 <- compute_xic_area(rt_values, int)
   
   mz_exp_result <- tryCatch({
