@@ -276,19 +276,23 @@ plot_xic <- function(rt_values, intensities, output_file, analyte_name = NULL, m
 }
 
 # Write metric to JSON file
-update_metric_json <- function(metric_name, analyte, sample_name, value) {
+update_metric_json <- function(metric_name, analyte, sample_name, value, ms_level) {
+  ms_label <- paste0("MS", ms_level)
+  section_label <- paste(metric_name, ms_label)
+
   json_file <- file.path(getwd(), paste0(metric_name, "_", sample_name, "_mqc.json"))
+
   if (file.exists(json_file)) {
     json_data <- fromJSON(json_file)
   } else {
     json_data <- list(
       id = metric_name,
-      section_name = metric_name,
-      description = paste(metric_name, "values across samples"),
+      section_name = section_label,
+      description = paste(section_label, "values across samples"),
       plot_type = "linegraph",
       pconfig = list(
         id = paste0(metric_name, "_plot"),
-        title = metric_name,
+        title = section_label,
         xlab = "Sample",
         ylab = paste(metric_name, "(unit)"),
         xlab_format = "category",
@@ -297,7 +301,11 @@ update_metric_json <- function(metric_name, analyte, sample_name, value) {
       data = list()
     )
   }
+
+  json_data$section_name <- section_label
+  json_data$pconfig$title <- section_label
   json_data$data[[analyte]][[sample_name]] <- value
+
   write_json(json_data, path = json_file, auto_unbox = TRUE, pretty = TRUE)
 }
 
@@ -369,7 +377,7 @@ for (analyte in analyte_names) {
 
   for (metric in json_metrics) {
     if (metric %in% colnames(result_row)) {
-      update_metric_json(metric, analyte, sample_name, result_row[[metric]])
+      update_metric_json(metric, analyte, sample_name, result_row[[metric]], opt$msLevel)
       message(glue("    Updated JSON metric: {metric}"))
     }
   }
