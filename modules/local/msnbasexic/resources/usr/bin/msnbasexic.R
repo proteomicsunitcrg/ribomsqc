@@ -180,18 +180,55 @@ compute_xic_area <- function(rt_values, intensities) {
   }
 }
 
-# Plot chromatogram
 plot_xic <- function(rt_values, intensities, output_file, analyte_name = NULL, ms_level = NULL, mz_tol = NULL, rt_tol_sec = NULL, sample_name = NULL, mz_tol_ppm = NULL) {
   if (length(rt_values) == 0 || length(intensities) == 0) return(NULL)
+  
   xic_df <- data.frame(RT = rt_values, Intensity = intensities)
   xic_df <- xic_df[complete.cases(xic_df), ]
+
+  max_idx <- which.max(xic_df$Intensity)
+  max_rt <- xic_df$RT[max_idx]
+  max_intensity <- xic_df$Intensity[max_idx]
+
+  # Calcular FWHM i PPP
+  fwhm <- calculate_fwhm(xic_df$RT, xic_df$Intensity)
+  ppp <- calculate_ppp_custom(xic_df$RT, xic_df$Intensity, threshold_ratio = 0.01)
+
+  # Punts per FWHM
+  half_max <- max_intensity / 2
+  above_half_idx <- which(xic_df$Intensity >= half_max)
+  if (length(above_half_idx) >= 2) {
+    fwhm_start_rt <- xic_df$RT[min(above_half_idx)]
+    fwhm_end_rt <- xic_df$RT[max(above_half_idx)]
+  } else {
+    fwhm_start_rt <- NA
+    fwhm_end_rt <- NA
+  }
+
+  # Valor de llindar per PPP
+  ppp_threshold <- max_intensity * 0.01
+
   plot_title <- glue("XIC for {analyte_name} (MS{ms_level})")
-  plot_subtitle <- glue("Sample: {sample_name} | mz tol: ±{mz_tol_ppm} ppm | rt tol: ±{round(rt_tol_sec, 1)}s (±{round(2*rt_tol_sec, 0)}s window)")
+  plot_subtitle <- glue("Sample: {sample_name} | mz tol: ±{mz_tol_ppm} ppm | rt tol: ±{round(rt_tol_sec, 1)}s")
+
   p <- ggplot(xic_df, aes(x = RT, y = Intensity)) +
-    geom_point(size = 1.6) +
     geom_line(color = "blue", linewidth = 0.8) +
+    geom_point(size = 1.6) +
+    geom_vline(xintercept = max_rt, linetype = "dashed", color = "red") +
+    annotate("text", x = max_rt, y = max_intensity, label = "Max", vjust = -1, hjust = 1, size = 3.5) +
+    annotate("text", x = Inf, y = Inf, label = glue("FWHM: {round(fwhm, 2)} sec\nPPP: {ppp}"), 
+             hjust = 1.1, vjust = 1.3, size = 4, color = "black") +
+    # Línia FWHM
+    {if (!is.na(fwhm_start_rt) && !is.na(fwhm_end_rt)) geom_segment(aes(x = fwhm_start_rt, xend = fwhm_end_rt,
+                                                                         y = half_max, yend = half_max),
+                                                                    color = "darkgreen", linetype = "dotted", linewidth = 1)} +
+    # Línia de llindar per PPP
+    geom_hline(yintercept = ppp_threshold, color = "gray40", linetype = "dotdash") +
+    annotate("text", x = -Inf, y = ppp_threshold, label = glue("PPP threshold (1%)"), hjust = -0.1, vjust = -0.5, size = 3.5, color = "gray30") +
     ggtitle(plot_title, subtitle = plot_subtitle) +
-    theme_minimal() + xlab("Retention Time (sec)") + ylab("Intensity")
+    xlab("Retention Time (sec)") + ylab("Intensity") +
+    theme_minimal()
+
   ggsave(output_file, plot = p, width = 8, height = 6, dpi = 300, bg = "white")
 }
 
