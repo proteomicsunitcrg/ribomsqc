@@ -86,7 +86,8 @@ workflow RIBOMSQC {
         MERGEJSONS(ch_merge_input)
 
         MERGEJSONS.out.merged_jsons
-            .map { it -> it[1] }
+            .flatten()
+            .collect()
             .set { ch_multiqc_files }
 
         /*

@@ -44,7 +44,6 @@ if (length(metric_ids) == 0) {
 
 # Check if all expected merged outputs already exist
 existing_outputs <- list.files(pattern = "_merged_mqc\\.json$")
-
 expected_outputs <- paste0(metric_ids, "_merged_mqc.json")
 
 if (all(expected_outputs %in% existing_outputs)) {
@@ -52,13 +51,13 @@ if (all(expected_outputs %in% existing_outputs)) {
   quit(status = 0)
 }
 
-# If some outputs exist and others do not, raise an error
 if (any(expected_outputs %in% existing_outputs)) {
   stop("Some merged JSONs already exist. Please remove or clean the output directory before reprocessing.")
 }
 
-# Initialize the merged data structure
+# Initialize the merged data structure and meta-header tracking
 merged_metrics <- list()
+meta_headers <- list()
 
 # Process each JSON file and group values by metric → analyte → sample
 for (file in json_files) {
@@ -77,6 +76,15 @@ for (file in json_files) {
 
   metric <- data$id
 
+  # Save meta header (first occurrence only)
+  if (!metric %in% names(meta_headers)) {
+    meta_headers[[metric]] <- list(
+      section_name = data$section_name,
+      description = data$description,
+      pconfig = data$pconfig
+    )
+  }
+
   if (!metric %in% names(merged_metrics)) {
     merged_metrics[[metric]] <- list()
   }
@@ -94,19 +102,14 @@ for (file in json_files) {
 
 # Write merged JSONs, one per metric
 for (metric in names(merged_metrics)) {
+  header <- meta_headers[[metric]]
+
   merged_json <- list(
     id = metric,
-    section_name = metric,
-    description = paste(metric, "values across samples"),
+    section_name = header$section_name,
+    description = header$description,
     plot_type = "linegraph",
-    pconfig = list(
-      id = paste0(metric, "_plot"),
-      title = metric,
-      xlab = "Sample",
-      ylab = paste0(metric, " (unit)"),
-      xlab_format = "category",
-      showlegend = TRUE
-    ),
+    pconfig = header$pconfig,
     data = merged_metrics[[metric]]
   )
 
