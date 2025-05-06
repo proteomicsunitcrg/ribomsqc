@@ -10,7 +10,14 @@ suppressPackageStartupMessages(library(jsonlite))
 suppressPackageStartupMessages(library(glue))
 
 # Define metrics to be exported to JSON
-json_metrics <- c("Log2_Total_Area", "dmz_ppm", "Observed_RT_sec", "dRT_sec", "FWHM", "PPP")
+json_metrics <- c("Log2_Total_Area", "dmz_ppm", "Observed_RT_sec", "dRT_sec", "FWHM")
+json_titles <- list(
+  Log2_Total_Area = "Log₂ Area",
+  dmz_ppm = "Δm/z (ppm)",
+  Observed_RT_sec = "Observed Retention Time (s)",
+  dRT_sec = "ΔRT (s)",
+  FWHM = "Full Width at Half Max (s)"
+)
 
 # PPP constant:  
 PPP_THRESHOLD_RATIO <- 0.05
@@ -228,7 +235,10 @@ compute_xic_area <- function(rt_values, intensities) {
   }
 }
 
-plot_xic <- function(rt_values, intensities, output_file, analyte_name = NULL, ms_level = NULL, mz_tol = NULL, rt_tol_sec = NULL, sample_name = NULL, mz_tol_ppm = NULL) {
+plot_xic <- function(rt_values, intensities, output_file, analyte_name = NULL, ms_level = NULL,
+                     mz_tol = NULL, rt_tol_sec = NULL, sample_name = NULL, mz_tol_ppm = NULL,
+                     plot_ppp = TRUE) {
+
   if (length(rt_values) == 0 || length(intensities) == 0) return(NULL)
 
   xic_df <- data.frame(RT = rt_values, Intensity = intensities)
@@ -240,7 +250,9 @@ plot_xic <- function(rt_values, intensities, output_file, analyte_name = NULL, m
   max_intensity <- xic_df$Intensity[max_idx]
 
   half_max <- max_intensity / 2
-  ppp <- calculate_ppp_custom(xic_df$RT, xic_df$Intensity, threshold_ratio = PPP_THRESHOLD_RATIO)
+
+  # Calcular PPP només si s'ha activat el flag
+  ppp <- if (plot_ppp) calculate_ppp_custom(xic_df$RT, xic_df$Intensity, threshold_ratio = PPP_THRESHOLD_RATIO) else NA
 
   # Get FWHM and edges (safe)
   fwhm_data <- calculate_fwhm(xic_df$RT, xic_df$Intensity)
@@ -260,25 +272,32 @@ plot_xic <- function(rt_values, intensities, output_file, analyte_name = NULL, m
   # PPP threshold
   ppp_threshold <- max_intensity * PPP_THRESHOLD_RATIO
 
+  # RT range info
+  rt_min <- min(xic_df$RT, na.rm = TRUE)
+  rt_max <- max(xic_df$RT, na.rm = TRUE)
+  rt_range_text <- glue("RT range: {round(rt_min, 2)} - {round(rt_max, 2)} sec")
+
   # Titles
   plot_title <- glue("XIC for {analyte_name} (MS{ms_level})")
   plot_subtitle <- glue("Sample: {sample_name} | mz tol: ±{mz_tol_ppm} ppm | rt tol: ±{round(rt_tol_sec, 1)}s")
 
+  # Build plot
   p <- ggplot(xic_df, aes(x = RT, y = Intensity)) +
     geom_line(color = "blue", linewidth = 0.8) +
     geom_point(size = 1.6) +
     geom_vline(xintercept = max_rt, linetype = "dashed", color = "red") +
     annotate("text", x = max_rt, y = max_intensity, label = "Max", vjust = -1, hjust = 1, size = 3.5) +
-    annotate("text", x = Inf, y = Inf, label = glue("FWHM: {round(fwhm, 2)} sec\nPPP: {ppp}"),
+    annotate("text", x = Inf, y = Inf,
+             label = glue("FWHM: {round(fwhm, 2)} sec", if (plot_ppp) glue("\nPPP: {ppp}") else ""),
              hjust = 1.1, vjust = 1.3, size = 4, color = "black") +
-    # Add FWHM line only if defined
+    annotate("text", x = -Inf, y = Inf, label = rt_range_text,
+             hjust = -0.1, vjust = 1.3, size = 3.5, color = "black") +
     { if (!is.null(fwhm_line)) geom_line(data = fwhm_line, aes(x = RT, y = Intensity),
                                          inherit.aes = FALSE, color = "darkgreen",
                                          linetype = "dotted", linewidth = 1) } +
-    # PPP threshold line
-    geom_hline(yintercept = ppp_threshold, color = "gray40", linetype = "dotdash") +
-    annotate("text", x = -Inf, y = ppp_threshold, label = "PPP threshold (1%)",
-             hjust = -0.1, vjust = -0.5, size = 3.5, color = "gray30") +
+    { if (plot_ppp) geom_hline(yintercept = ppp_threshold, color = "gray40", linetype = "dotdash") } +
+    { if (plot_ppp) annotate("text", x = -Inf, y = ppp_threshold, label = "PPP threshold (1%)",
+                             hjust = -0.1, vjust = -0.5, size = 3.5, color = "gray30") } +
     ggtitle(plot_title, subtitle = plot_subtitle) +
     xlab("Retention Time (sec)") + ylab("Intensity") +
     theme_minimal()
@@ -286,11 +305,15 @@ plot_xic <- function(rt_values, intensities, output_file, analyte_name = NULL, m
   ggsave(output_file, plot = p, width = 8, height = 6, dpi = 300, bg = "white")
 }
 
-
 # Write metric to JSON file
 update_metric_json <- function(metric_name, analyte, sample_name, value, ms_level) {
   ms_label <- paste0("MS", ms_level)
-  section_label <- paste(metric_name, ms_label)
+
+  # Agafa el títol humanitzat (o el nom per defecte si no hi és)
+  metric_title <- if (!is.null(json_titles[[metric_name]])) json_titles[[metric_name]] else metric_name
+
+  # Títol i secció més llegibles
+  section_label <- paste(metric_title, ms_label)
 
   json_file <- file.path(getwd(), paste0(metric_name, "_", sample_name, "_mqc.json"))
 
@@ -298,15 +321,15 @@ update_metric_json <- function(metric_name, analyte, sample_name, value, ms_leve
     json_data <- fromJSON(json_file)
   } else {
     json_data <- list(
-      id = metric_name,
+      id = metric_name,  # No es toca!
       section_name = section_label,
-      description = paste(section_label, "values across samples"),
+      description = "",
       plot_type = "linegraph",
       pconfig = list(
         id = paste0(metric_name, "_plot"),
         title = section_label,
         xlab = "Sample",
-        ylab = paste(metric_name, "(unit)"),
+        ylab = metric_title,
         xlab_format = "category",
         showlegend = TRUE
       ),
@@ -314,8 +337,12 @@ update_metric_json <- function(metric_name, analyte, sample_name, value, ms_leve
     )
   }
 
+  # Actualitza títol i secció (per si el fitxer ja existia amb un títol antic)
   json_data$section_name <- section_label
   json_data$pconfig$title <- section_label
+  json_data$pconfig$ylab <- metric_title
+
+  # Assigna la dada
   json_data$data[[analyte]][[sample_name]] <- value
 
   write_json(json_data, path = json_file, auto_unbox = TRUE, pretty = TRUE)
@@ -383,7 +410,8 @@ for (analyte in analyte_names) {
                mz_tol = mz_tol,
                rt_tol_sec = opt$rt_tol_sec,
                sample_name = sample_name,
-               mz_tol_ppm = opt$mz_tol_ppm)
+               mz_tol_ppm = opt$mz_tol_ppm,
+               plot_ppp = FALSE)
     }
   }
 
