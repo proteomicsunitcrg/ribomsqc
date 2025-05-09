@@ -10,16 +10,18 @@ suppressPackageStartupMessages(library(jsonlite))
 suppressPackageStartupMessages(library(glue))
 
 # Define metrics to be exported to JSON
-json_metrics <- c("Log2_Total_Area", "dmz_ppm", "Observed_RT_sec", "dRT_sec", "FWHM")
+json_metrics <- c("Log2_Total_Area", "dmz_ppm", "Observed_RT_sec", "FWHM")
 json_titles <- list(
   Log2_Total_Area = "Log₂ Area",
   dmz_ppm = "Δm/z (ppm)",
   Observed_RT_sec = "Observed Retention Time (s)",
-  dRT_sec = "ΔRT (s)",
   FWHM = "Full Width at Half Max (s)"
 )
 
-# PPP constant:  
+# Define mode of acquisition: FALSE for DDA (default), TRUE for DIA
+IS_DIA <- FALSE  # Change to TRUE if working with DIA data
+
+# PPP constant (OPTIONAL):  
 PPP_THRESHOLD_RATIO <- 0.05
 
 # Define command-line options
@@ -79,39 +81,62 @@ assign_mz1 <- function(analyte_data, msLevel) {
 }
 
 # Compute XIC for given m/z and retention time
-compute_xic <- function(ms_data, mz1, rt_target, rt_tol_sec, mz_tol, msLevel, ppm_tol = 20) {
+compute_xic <- function(ms_data, mz1, rt_target, rt_tol_sec, mz_tol, msLevel, ppm_tol) {
+  # Check if rt_tol_sec and ppm_tol are provided
+  if (missing(rt_tol_sec) || missing(ppm_tol)) {
+    stop("Error: Both 'rt_tol_sec' and 'ppm_tol' are mandatory parameters.")
+  }
+
   rt_window <- c(rt_target - rt_tol_sec, rt_target + rt_tol_sec)
   mz_window <- c(mz1 - mz_tol, mz1 + mz_tol)
 
   if (msLevel == 1) {
-    # MS1: extract chromatogram directly using mz and RT window
+    # MS1: Extract chromatogram directly using mz and RT window
     chromatogram(ms_data, mz = mz_window, rt = rt_window, msLevel = 1, aggregationFun = "mean")
   } else {
-    # MS2: filter manually by RT and precursor m/z
-    ms2_data <- ms_data |>
-      filterMsLevel(2) |>
-      filterRt(rt_window)
+    # DDA: The XIC is calculated by filtering for a specific precursor m/z.
+    if (!IS_DIA) {
+      message("Mode DDA: Filtering MS2 spectra by precursor m/z.")
+      ms2_data <- ms_data |>
+        filterMsLevel(2) |>
+        filterRt(rt_window)
 
-    # Extract precursor m/z for each spectrum
-    prec_mz <- precursorMz(ms2_data)
+      # Extract precursor m/z for each spectrum
+      prec_mz <- precursorMz(ms2_data)
+      valid_idx <- which(!is.na(prec_mz) & prec_mz >= mz_window[1] & prec_mz <= mz_window[2])
 
-    # Keep only spectra with non-NA precursor m/z within target range
-    valid_idx <- which(!is.na(prec_mz) & prec_mz >= mz_window[1] & prec_mz <= mz_window[2])
+      message(glue("Found {length(valid_idx)} MS2 spectra with precursor m/z within ±{round(ppm_tol, 1)} ppm of {mz1}"))
 
-    # Logging: how many MS2 spectra matched
-    message(glue("Found {length(valid_idx)} MS2 spectra with precursor m/z within ±{round(ppm_tol, 1)} ppm of {mz1}"))
+      if (length(valid_idx) == 0) {
+        warning("No MS2 spectra matched precursor m/z within the specified ppm.")
+        return(list(NULL))
+      }
 
-    if (length(valid_idx) == 0) {
-      warning("No MS2 spectra matched precursor m/z within the specified ppm.")
-      return(list(NULL))
+      # Keep only matching MS2 spectra
+      ms2_data <- ms2_data[valid_idx]
+    } else {
+      # DIA: The XIC is calculated by summing the intensities of all MS2 spectra within the retention time window, without filtering by precursor m/z.
+      message("Mode DIA: Processing all MS2 spectra within the RT window.")
+      ms2_data <- ms_data |>
+        filterMsLevel(2) |>
+        filterRt(rt_window)
+
+      message(glue("Found {length(ms2_data)} MS2 spectra for DIA mode (no precursor filtering)"))
+
+      if (length(ms2_data) == 0) {
+        warning("No MS2 spectra found within the RT window in DIA mode.")
+        return(list(NULL))
+      }
     }
-
-    # Keep only matching MS2 spectra
-    ms2_data <- ms2_data[valid_idx]
 
     # Build chromatogram manually by summing intensities per spectrum
     rt_vals <- rtime(ms2_data)
     int_vals <- sapply(spectra(ms2_data), function(s) sum(intensity(s), na.rm = TRUE))
+
+    if (length(rt_vals) == 0 || length(int_vals) == 0) {
+      warning("No valid XIC signal found.")
+      return(list(NULL))
+    }
 
     chrom <- new("Chromatogram", rtime = rt_vals, intensity = int_vals)
     list(chrom)
@@ -237,30 +262,34 @@ compute_xic_area <- function(rt_values, intensities) {
 
 plot_xic <- function(rt_values, intensities, output_file, analyte_name = NULL, ms_level = NULL,
                      mz_tol = NULL, rt_tol_sec = NULL, sample_name = NULL, mz_tol_ppm = NULL,
-                     plot_ppp = TRUE) {
+                     plot_ppp = TRUE, rt_target = NULL) {
 
+  # Return NULL if there are no data points
   if (length(rt_values) == 0 || length(intensities) == 0) return(NULL)
 
+  # Build and clean XIC data frame
   xic_df <- data.frame(RT = rt_values, Intensity = intensities)
   xic_df <- xic_df[complete.cases(xic_df), ]
   xic_df <- xic_df[order(xic_df$RT), ]
 
+  # Identify maximum intensity and its retention time
   max_idx <- which.max(xic_df$Intensity)
   max_rt <- xic_df$RT[max_idx]
   max_intensity <- xic_df$Intensity[max_idx]
 
+  # Calculate half of the maximum intensity
   half_max <- max_intensity / 2
 
-  # Calcular PPP només si s'ha activat el flag
+  # Calculate PPP only if the flag is enabled
   ppp <- if (plot_ppp) calculate_ppp_custom(xic_df$RT, xic_df$Intensity, threshold_ratio = PPP_THRESHOLD_RATIO) else NA
 
-  # Get FWHM and edges (safe)
+  # Compute FWHM and its edges
   fwhm_data <- calculate_fwhm(xic_df$RT, xic_df$Intensity)
   fwhm <- fwhm_data$fwhm
   left_rt <- fwhm_data$left_rt
   right_rt <- fwhm_data$right_rt
 
-  # Create FWHM line only if valid
+  # Create a line for the FWHM level if valid
   fwhm_line <- NULL
   if (!is.na(left_rt) && !is.na(right_rt) && !is.na(half_max)) {
     fwhm_line <- data.frame(
@@ -269,39 +298,60 @@ plot_xic <- function(rt_values, intensities, output_file, analyte_name = NULL, m
     )
   }
 
-  # PPP threshold
+  # Determine PPP threshold line
   ppp_threshold <- max_intensity * PPP_THRESHOLD_RATIO
 
-  # RT range info
-  rt_min <- min(xic_df$RT, na.rm = TRUE)
-  rt_max <- max(xic_df$RT, na.rm = TRUE)
-  rt_range_text <- glue("RT range: {round(rt_min, 2)} - {round(rt_max, 2)} sec")
+  # Prepare theoretical RT range text based on target and tolerance
+  if (!is.null(rt_target) && !is.null(rt_tol_sec)) {
+    rt_min_theo <- rt_target - rt_tol_sec
+    rt_max_theo <- rt_target + rt_tol_sec
+    rt_range_text <- glue("RT range: {round(rt_min_theo, 2)} - {round(rt_max_theo, 2)} sec")
+  } else {
+    rt_range_text <- ""
+  }
 
-  # Titles
+  # Compose plot titles
   plot_title <- glue("XIC for {analyte_name} (MS{ms_level})")
   plot_subtitle <- glue("Sample: {sample_name} | mz tol: ±{mz_tol_ppm} ppm | rt tol: ±{round(rt_tol_sec, 1)}s")
 
-  # Build plot
+  # Build and save the plot
   p <- ggplot(xic_df, aes(x = RT, y = Intensity)) +
+    # Main chromatogram line in blue
     geom_line(color = "blue", linewidth = 0.8) +
     geom_point(size = 1.6) +
+    # Max intensity marker and label in red
     geom_vline(xintercept = max_rt, linetype = "dashed", color = "red") +
-    annotate("text", x = max_rt, y = max_intensity, label = "Max", vjust = -1, hjust = 1, size = 3.5) +
-    annotate("text", x = Inf, y = Inf,
-             label = glue("FWHM: {round(fwhm, 2)} sec", if (plot_ppp) glue("\nPPP: {ppp}") else ""),
-             hjust = 1.1, vjust = 1.3, size = 4, color = "black") +
-    annotate("text", x = -Inf, y = Inf, label = rt_range_text,
-             hjust = -0.1, vjust = 1.3, size = 3.5, color = "black") +
+    annotate("text", x = max_rt, y = max_intensity,
+             label = "Max", color = "red", size = 3,
+             vjust = -1, hjust = 1) +
+    # FWHM level as dotted dark green line
     { if (!is.null(fwhm_line)) geom_line(data = fwhm_line, aes(x = RT, y = Intensity),
-                                         inherit.aes = FALSE, color = "darkgreen",
-                                         linetype = "dotted", linewidth = 1) } +
-    { if (plot_ppp) geom_hline(yintercept = ppp_threshold, color = "gray40", linetype = "dotdash") } +
-    { if (plot_ppp) annotate("text", x = -Inf, y = ppp_threshold, label = "PPP threshold (1%)",
-                             hjust = -0.1, vjust = -0.5, size = 3.5, color = "gray30") } +
+                                         inherit.aes = FALSE,
+                                         color = "darkgreen",
+                                         linetype = "dotted",
+                                         linewidth = 1) } +
+    # PPP threshold line in gray
+    { if (plot_ppp) geom_hline(yintercept = ppp_threshold,
+                               color = "gray40",
+                               linetype = "dotdash") } +
+    # Annotations on the left, stacked vertically
+    annotate("text", x = -Inf, y = Inf,
+             label = glue("FWHM: {round(fwhm, 2)} sec"),
+             hjust = 0, vjust = 1, size = 3.5) +
+    { if (plot_ppp) annotate("text", x = -Inf, y = Inf,
+                             label = glue("PPP: {ppp}"),
+                             hjust = 0, vjust = 2, size = 3.5) } +
+    annotate("text", x = -Inf, y = Inf,
+             label = rt_range_text,
+             hjust = 0, vjust = 3, size = 3.5) +
     ggtitle(plot_title, subtitle = plot_subtitle) +
     xlab("Retention Time (sec)") + ylab("Intensity") +
-    theme_minimal()
+    # Allow annotations outside the panel and set margins
+    coord_cartesian(clip = "off") +
+    theme_minimal() +
+    theme(plot.margin = margin(t = 20, r = 20, b = 20, l = 20))
 
+  # Save figure to file
   ggsave(output_file, plot = p, width = 8, height = 6, dpi = 300, bg = "white")
 }
 
@@ -357,7 +407,7 @@ for (analyte in analyte_names) {
   mz_tol <- (opt$mz_tol_ppm * mz1) / 1e6
   rt_target <- analyte_data$rt_target
   message(glue("  mz1 = {mz1}, rt_target = {rt_target}, mz_tol = {mz_tol}, msLevel = {opt$msLevel}"))
-  xic <- compute_xic(ms_data, mz1, rt_target, opt$rt_tol_sec, mz_tol, opt$msLevel)
+  xic <- compute_xic(ms_data, mz1, rt_target, opt$rt_tol_sec, mz_tol, opt$msLevel, opt$mz_tol_ppm)
   if (length(xic) == 0 || is.null(xic[[1]])) {
     message(glue("  No XIC signal found for analyte {analyte}. Skipping."))
     next
@@ -411,7 +461,8 @@ for (analyte in analyte_names) {
                rt_tol_sec = opt$rt_tol_sec,
                sample_name = sample_name,
                mz_tol_ppm = opt$mz_tol_ppm,
-               plot_ppp = FALSE)
+               plot_ppp = FALSE,
+              rt_target = analyte_data$rt_target)
     }
   }
 
