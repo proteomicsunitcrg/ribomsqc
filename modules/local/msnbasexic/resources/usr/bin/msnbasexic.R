@@ -18,9 +18,6 @@ json_titles <- list(
   FWHM = "Full Width at Half Max (s)"
 )
 
-# Define mode of acquisition: FALSE for DDA (default), TRUE for DIA
-IS_DIA <- FALSE  # Change to TRUE if working with DIA data
-
 # PPP constant (OPTIONAL):  
 PPP_THRESHOLD_RATIO <- 0.05
 
@@ -81,63 +78,136 @@ assign_mz1 <- function(analyte_data, msLevel) {
 }
 
 # Compute XIC for given m/z and retention time
+# Compute XIC for given m/z and retention time, specifically for MS1 and MS2 data
 compute_xic <- function(ms_data, mz1, rt_target, rt_tol_sec, mz_tol, msLevel, ppm_tol) {
   # Check if rt_tol_sec and ppm_tol are provided
   if (missing(rt_tol_sec) || missing(ppm_tol)) {
     stop("Error: Both 'rt_tol_sec' and 'ppm_tol' are mandatory parameters.")
   }
 
+  # Define RT and m/z windows
   rt_window <- c(rt_target - rt_tol_sec, rt_target + rt_tol_sec)
   mz_window <- c(mz1 - mz_tol, mz1 + mz_tol)
 
   if (msLevel == 1) {
-    # MS1: Extract chromatogram directly using mz and RT window
-    chromatogram(ms_data, mz = mz_window, rt = rt_window, msLevel = 1, aggregationFun = "mean")
-  } else {
-    # DDA: The XIC is calculated by filtering for a specific precursor m/z.
-    if (!IS_DIA) {
-      message("Mode DDA: Filtering MS2 spectra by precursor m/z.")
-      ms2_data <- ms_data |>
-        filterMsLevel(2) |>
-        filterRt(rt_window)
+    # MS1: Manual extraction without using chromatogram
+    message("Manual MS1 XIC extraction")
 
-      # Extract precursor m/z for each spectrum
-      prec_mz <- precursorMz(ms2_data)
-      valid_idx <- which(!is.na(prec_mz) & prec_mz >= mz_window[1] & prec_mz <= mz_window[2])
+    # Filter for MS1 level and RT window
+    ms1_data <- ms_data |>
+      filterMsLevel(1) |>
+      filterRt(rt_window)
 
-      message(glue("Found {length(valid_idx)} MS2 spectra with precursor m/z within ±{round(ppm_tol, 1)} ppm of {mz1}"))
-
-      if (length(valid_idx) == 0) {
-        warning("No MS2 spectra matched precursor m/z within the specified ppm.")
-        return(list(NULL))
-      }
-
-      # Keep only matching MS2 spectra
-      ms2_data <- ms2_data[valid_idx]
-    } else {
-      # DIA: The XIC is calculated by summing the intensities of all MS2 spectra within the retention time window, without filtering by precursor m/z.
-      message("Mode DIA: Processing all MS2 spectra within the RT window.")
-      ms2_data <- ms_data |>
-        filterMsLevel(2) |>
-        filterRt(rt_window)
-
-      message(glue("Found {length(ms2_data)} MS2 spectra for DIA mode (no precursor filtering)"))
-
-      if (length(ms2_data) == 0) {
-        warning("No MS2 spectra found within the RT window in DIA mode.")
-        return(list(NULL))
-      }
+    # Check if any spectra are found after filtering
+    if (length(ms1_data) == 0) {
+      warning("No MS1 data found within the specified RT window")
+      return(list(NULL))
     }
 
-    # Build chromatogram manually by summing intensities per spectrum
-    rt_vals <- rtime(ms2_data)
-    int_vals <- sapply(spectra(ms2_data), function(s) sum(intensity(s), na.rm = TRUE))
+    # Build XIC by averaging intensities per spectrum within the m/z window
+    rt_vals <- rtime(ms1_data)
+    int_vals <- sapply(seq_along(spectra(ms1_data)), function(i) {
+      spec <- spectra(ms1_data)[[i]]
+      mz_values <- mz(spec)
+      intensity_values <- intensity(spec)
+      scan_num <- acquisitionNum(spec)  # Use acquisitionNum to get scan number
 
-    if (length(rt_vals) == 0 || length(int_vals) == 0) {
+      # Filter intensities within m/z window
+      valid_idx <- which(mz_values >= mz_window[1] & mz_values <= mz_window[2])
+
+      # Log for debugging with scan number and ppm difference
+      if (length(valid_idx) == 0) {
+        mz_diff <- abs(mz_values - mz1)
+        min_diff <- min(mz_diff, na.rm = TRUE)
+        closest_mz <- mz_values[which.min(mz_diff)]
+        ppm_difference <- (min_diff / mz1) * 1e6
+        message(glue("MS1 Spectrum {i} (RT: {rt_vals[i]}, Scan: {scan_num}) discarded: Closest m/z {round(closest_mz, 5)} differs by {round(ppm_difference, 2)} ppm from {mz1}"))
+      }
+
+      # Mean intensity within the range
+      if (length(valid_idx) > 0) {
+        mean(intensity_values[valid_idx], na.rm = TRUE)
+      } else {
+        NA
+      }
+    })
+
+    # Clean up NA intensities
+    valid <- which(!is.na(int_vals))
+    if (length(valid) == 0) {
       warning("No valid XIC signal found.")
       return(list(NULL))
     }
 
+    rt_vals <- rt_vals[valid]
+    int_vals <- int_vals[valid]
+
+    # Create chromatogram object manually
+    chrom <- new("Chromatogram", rtime = rt_vals, intensity = int_vals)
+    list(chrom)
+    
+  } else if (msLevel == 2) {
+    # MS2: Manual extraction similar to MS1 logic
+    message("Manual MS2 XIC extraction")
+
+    # Filter for MS2 level and RT window
+    ms2_data <- ms_data |>
+      filterMsLevel(2) |>
+      filterRt(rt_window)
+
+    # Extract precursor m/z for each spectrum
+    prec_mz <- precursorMz(ms2_data)
+    valid_idx <- which(!is.na(prec_mz) & prec_mz >= mz_window[1] & prec_mz <= mz_window[2])
+
+    message(glue("Found {length(valid_idx)} MS2 spectra with precursor m/z within ±{round(ppm_tol, 1)} ppm of {mz1}"))
+
+    if (length(valid_idx) == 0) {
+      warning("No MS2 spectra matched precursor m/z within the specified ppm.")
+      return(list(NULL))
+    }
+
+    # Keep only matching MS2 spectra
+    ms2_data <- ms2_data[valid_idx]
+
+    # Build chromatogram manually by summing intensities per spectrum
+    rt_vals <- rtime(ms2_data)
+    int_vals <- sapply(seq_along(spectra(ms2_data)), function(i) {
+      spec <- spectra(ms2_data)[[i]]
+      mz_values <- mz(spec)
+      intensity_values <- intensity(spec)
+      scan_num <- acquisitionNum(spec)  # Use acquisitionNum to get scan number
+
+      # Filter intensities within m/z window
+      valid_idx <- which(mz_values >= mz_window[1] & mz_values <= mz_window[2])
+
+      # Log for debugging with scan number and ppm difference
+      if (length(valid_idx) == 0) {
+        mz_diff <- abs(mz_values - mz1)
+        min_diff <- min(mz_diff, na.rm = TRUE)
+        closest_mz <- mz_values[which.min(mz_diff)]
+        ppm_difference <- (min_diff / mz1) * 1e6
+        message(glue("MS2 Spectrum {i} (RT: {rt_vals[i]}, Scan: {scan_num}) discarded: Closest m/z {round(closest_mz, 5)} differs by {round(ppm_difference, 2)} ppm from {mz1}"))
+      }
+
+      # Sum intensity within the range
+      if (length(valid_idx) > 0) {
+        sum(intensity_values[valid_idx], na.rm = TRUE)
+      } else {
+        NA
+      }
+    })
+
+    # Clean up NA intensities
+    valid <- which(!is.na(int_vals))
+    if (length(valid) == 0) {
+      warning("No valid XIC signal found.")
+      return(list(NULL))
+    }
+
+    rt_vals <- rt_vals[valid]
+    int_vals <- int_vals[valid]
+
+    # Create chromatogram object manually
     chrom <- new("Chromatogram", rtime = rt_vals, intensity = int_vals)
     list(chrom)
   }
