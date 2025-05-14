@@ -78,8 +78,7 @@ assign_mz1 <- function(analyte_data, msLevel) {
 }
 
 # Compute XIC for given m/z and retention time
-# Compute XIC for given m/z and retention time, specifically for MS1 and MS2 data
-compute_xic <- function(ms_data, mz1, rt_target, rt_tol_sec, mz_tol, msLevel, ppm_tol) {
+compute_xic <- function(ms_data, mz1, rt_target, rt_tol_sec, mz_tol, msLevel, ppm_tol, ms2_target_mz = NULL){ 
   # Check if rt_tol_sec and ppm_tol are provided
   if (missing(rt_tol_sec) || missing(ppm_tol)) {
     stop("Error: Both 'rt_tol_sec' and 'ppm_tol' are mandatory parameters.")
@@ -124,9 +123,13 @@ compute_xic <- function(ms_data, mz1, rt_target, rt_tol_sec, mz_tol, msLevel, pp
         message(glue("MS1 Spectrum {i} (RT: {rt_vals[i]}, Scan: {scan_num}) discarded: Closest m/z {round(closest_mz, 5)} differs by {round(ppm_difference, 2)} ppm from {mz1}"))
       }
 
-      # Mean intensity within the range
       if (length(valid_idx) > 0) {
-        mean(intensity_values[valid_idx], na.rm = TRUE)
+        mean_int <- mean(intensity_values[valid_idx], na.rm = TRUE)
+        mz_selected <- mz_values[valid_idx]
+        closest_mz <- mz_selected[which.min(abs(mz_selected - mz1))]
+        ppm_difference <- ((closest_mz - mz1) / mz1) * 1e6
+        message(glue("MS1 Spectrum {i} (RT: {rt_vals[i]}, Scan: {scan_num}) used: Closest m/z {round(closest_mz, 5)} is {round(ppm_difference, 2)} ppm from {mz1}. Mean intensity = {round(mean_int, 2)}"))
+        mean_int
       } else {
         NA
       }
@@ -147,15 +150,15 @@ compute_xic <- function(ms_data, mz1, rt_target, rt_tol_sec, mz_tol, msLevel, pp
     list(chrom)
     
   } else if (msLevel == 2) {
-    # MS2: Manual extraction similar to MS1 logic
-    message("Manual MS2 XIC extraction")
+    # MS2: XIC dels fragments dins espectres MS2 associats a un precursor
+    message("Manual MS2 XIC extraction (targeting fragment ion)")
 
     # Filter for MS2 level and RT window
     ms2_data <- ms_data |>
       filterMsLevel(2) |>
       filterRt(rt_window)
 
-    # Extract precursor m/z for each spectrum
+    # Filtrar espectres MS2 pel precursor m/z ≈ mz1 (mz_M0)
     prec_mz <- precursorMz(ms2_data)
     valid_idx <- which(!is.na(prec_mz) & prec_mz >= mz_window[1] & prec_mz <= mz_window[2])
 
@@ -166,38 +169,54 @@ compute_xic <- function(ms_data, mz1, rt_target, rt_tol_sec, mz_tol, msLevel, pp
       return(list(NULL))
     }
 
-    # Keep only matching MS2 spectra
+    # Retenir només espectres MS2 rellevants
     ms2_data <- ms2_data[valid_idx]
 
-    # Build chromatogram manually by summing intensities per spectrum
+    # Preparar finestra de cerca del fragment objectiu
+    mz_window_fragment <- c(ms2_target_mz - mz_tol, ms2_target_mz + mz_tol)
+
+    # Construir XIC: intensitat del fragment per espectre MS2
     rt_vals <- rtime(ms2_data)
     int_vals <- sapply(seq_along(spectra(ms2_data)), function(i) {
-      spec <- spectra(ms2_data)[[i]]
-      mz_values <- mz(spec)
-      intensity_values <- intensity(spec)
-      scan_num <- acquisitionNum(spec)  # Use acquisitionNum to get scan number
+      result <- tryCatch({
+        spec <- spectra(ms2_data)[[i]]
+        scan_num <- acquisitionNum(spec)
+        rt_val <- rtime(spec)
 
-      # Filter intensities within m/z window
-      valid_idx <- which(mz_values >= mz_window[1] & mz_values <= mz_window[2])
+        mz_values <- mz(spec)
+        intensity_values <- intensity(spec)
 
-      # Log for debugging with scan number and ppm difference
-      if (length(valid_idx) == 0) {
-        mz_diff <- abs(mz_values - mz1)
-        min_diff <- min(mz_diff, na.rm = TRUE)
-        closest_mz <- mz_values[which.min(mz_diff)]
-        ppm_difference <- (min_diff / mz1) * 1e6
-        message(glue("MS2 Spectrum {i} (RT: {rt_vals[i]}, Scan: {scan_num}) discarded: Closest m/z {round(closest_mz, 5)} differs by {round(ppm_difference, 2)} ppm from {mz1}"))
-      }
+        if (length(mz_values) == 0 || length(intensity_values) == 0) {
+          message(glue("MS2 Spectrum {i} (RT: {rt_val}, Scan: {scan_num}) skipped: Empty spectrum"))
+          return(NA)
+        }
 
-      # Sum intensity within the range
-      if (length(valid_idx) > 0) {
-        sum(intensity_values[valid_idx], na.rm = TRUE)
-      } else {
-        NA
-      }
+        # Buscar el fragment objectiu dins l’espectre
+        valid_idx <- which(mz_values >= mz_window_fragment[1] & mz_values <= mz_window_fragment[2])
+
+        if (length(valid_idx) == 0) {
+          mz_diff <- abs(mz_values - ms2_target_mz)
+          min_diff <- min(mz_diff, na.rm = TRUE)
+          closest_mz <- mz_values[which.min(mz_diff)]
+          ppm_difference <- (min_diff / ms2_target_mz) * 1e6
+          message(glue("MS2 Spectrum {i} (RT: {rt_val}, Scan: {scan_num}) discarded: Closest m/z {round(closest_mz, 5)} differs by {round(ppm_difference, 2)} ppm from fragment {ms2_target_mz}"))
+          return(NA)
+        } else {
+          sum_int <- sum(intensity_values[valid_idx], na.rm = TRUE)
+          closest_mz <- mz_values[valid_idx][which.min(abs(mz_values[valid_idx] - ms2_target_mz))]
+          ppm_difference <- ((closest_mz - ms2_target_mz) / ms2_target_mz) * 1e6
+          message(glue("MS2 Spectrum {i} (RT: {rt_val}, Scan: {scan_num}) used: Fragment m/z {round(closest_mz, 5)} is {round(ppm_difference, 2)} ppm from {ms2_target_mz}. Sum intensity = {round(sum_int, 2)}"))
+          return(sum_int)
+        }
+      }, error = function(e) {
+        warning(glue("Error in MS2 Spectrum {i}: {e$message}"))
+        return(NA)
+      })
+
+      return(result)
     })
 
-    # Clean up NA intensities
+    # Filtrar valors vàlids
     valid <- which(!is.na(int_vals))
     if (length(valid) == 0) {
       warning("No valid XIC signal found.")
@@ -207,10 +226,13 @@ compute_xic <- function(ms_data, mz1, rt_target, rt_tol_sec, mz_tol, msLevel, pp
     rt_vals <- rt_vals[valid]
     int_vals <- int_vals[valid]
 
-    # Create chromatogram object manually
+    # Crear objecte chromatogram
     chrom <- new("Chromatogram", rtime = rt_vals, intensity = int_vals)
     list(chrom)
   }
+
+#end compute_xic
+
 }
 
 # Extract max intensity m/z at observed retention time
@@ -477,7 +499,7 @@ for (analyte in analyte_names) {
   mz_tol <- (opt$mz_tol_ppm * mz1) / 1e6
   rt_target <- analyte_data$rt_target
   message(glue("  mz1 = {mz1}, rt_target = {rt_target}, mz_tol = {mz_tol}, msLevel = {opt$msLevel}"))
-  xic <- compute_xic(ms_data, mz1, rt_target, opt$rt_tol_sec, mz_tol, opt$msLevel, opt$mz_tol_ppm)
+  xic <- compute_xic(ms_data, mz1, rt_target, opt$rt_tol_sec, mz_tol, opt$msLevel, opt$mz_tol_ppm, ms2_target_mz = if (opt$msLevel == 2) as.numeric(analyte_data$ms2_mz) else NULL)
   if (length(xic) == 0 || is.null(xic[[1]])) {
     message(glue("  No XIC signal found for analyte {analyte}. Skipping."))
     next
