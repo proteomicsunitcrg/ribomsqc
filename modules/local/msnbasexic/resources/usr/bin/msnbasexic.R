@@ -163,7 +163,7 @@ compute_xic <- function(ms_data, mz1, rt_target, rt_tol_sec, mz_tol, msLevel, pp
       filterMsLevel(2) |>
       filterRt(rt_window)
 
-    # Filtrar espectres MS2 pel precursor m/z ≈ mz1 (mz_M0)
+    # Filter MS2 by precursor m/z ≈ mz1 (mz_M0)
     prec_mz <- precursorMz(ms2_data)
     valid_idx <- which(!is.na(prec_mz) & prec_mz >= mz_window[1] & prec_mz <= mz_window[2])
 
@@ -174,13 +174,13 @@ compute_xic <- function(ms_data, mz1, rt_target, rt_tol_sec, mz_tol, msLevel, pp
       return(list(NULL))
     }
 
-    # Retenir només espectres MS2 rellevants
+    # Most relevant spectra
     ms2_data <- ms2_data[valid_idx]
 
-    # Preparar finestra de cerca del fragment objectiu
+    # Search window for fragment
     mz_window_fragment <- c(ms2_target_mz - mz_tol, ms2_target_mz + mz_tol)
 
-    # Construir XIC: intensitat del fragment per espectre MS2
+    # Intensity for the fragment
     rt_vals <- rtime(ms2_data)
     int_vals <- sapply(seq_along(spectra(ms2_data)), function(i) {
       result <- tryCatch({
@@ -196,7 +196,7 @@ compute_xic <- function(ms_data, mz1, rt_target, rt_tol_sec, mz_tol, msLevel, pp
           return(NA)
         }
 
-        # Buscar el fragment objectiu dins l’espectre
+        # Search fragment
         valid_idx <- which(mz_values >= mz_window_fragment[1] & mz_values <= mz_window_fragment[2])
 
         if (length(valid_idx) == 0) {
@@ -221,7 +221,7 @@ compute_xic <- function(ms_data, mz1, rt_target, rt_tol_sec, mz_tol, msLevel, pp
       return(result)
     })
 
-    # Filtrar valors vàlids
+    # Filter valid values
     valid <- which(!is.na(int_vals))
     if (length(valid) == 0) {
       warning("No valid XIC signal found.")
@@ -231,12 +231,9 @@ compute_xic <- function(ms_data, mz1, rt_target, rt_tol_sec, mz_tol, msLevel, pp
     rt_vals <- rt_vals[valid]
     int_vals <- int_vals[valid]
 
-    # Crear objecte chromatogram
     chrom <- new("Chromatogram", rtime = rt_vals, intensity = int_vals)
     list(chrom)
   }
-
-#end compute_xic
 
 }
 
@@ -478,7 +475,8 @@ update_metric_json <- function(metric_name, analyte, sample_name, value, ms_leve
       xlab = "Sample",
       ylab = metric_title,
       xlab_format = "category",
-      showlegend = TRUE
+      showlegend = TRUE,
+      style = "lines+markers"
     ), yaxis_config),
     data = list()
   )
