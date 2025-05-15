@@ -17,6 +17,11 @@ json_titles <- list(
   Observed_RT_sec = "Observed Retention Time (s)",
   FWHM = "Full Width at Half Max (s)"
 )
+# Optional Y axis window for metrics in the MultiQC JSON
+json_yaxis_window <- list(
+  dmz_ppm = c(-3, 3)
+ # ,Log2_Total_Area = c(5, 30)
+)
 
 # PPP constant (OPTIONAL):  
 PPP_THRESHOLD_RATIO <- 0.05
@@ -354,34 +359,25 @@ compute_xic_area <- function(rt_values, intensities) {
 
 plot_xic <- function(rt_values, intensities, output_file, analyte_name = NULL, ms_level = NULL,
                      mz_tol = NULL, rt_tol_sec = NULL, sample_name = NULL, mz_tol_ppm = NULL,
-                     plot_ppp = TRUE, rt_target = NULL) {
+                     plot_ppp = TRUE, rt_target = NULL, mz_theoretical = NULL, fragment_mz = NULL) {
 
-  # Return NULL if there are no data points
   if (length(rt_values) == 0 || length(intensities) == 0) return(NULL)
 
-  # Build and clean XIC data frame
   xic_df <- data.frame(RT = rt_values, Intensity = intensities)
   xic_df <- xic_df[complete.cases(xic_df), ]
   xic_df <- xic_df[order(xic_df$RT), ]
 
-  # Identify maximum intensity and its retention time
   max_idx <- which.max(xic_df$Intensity)
   max_rt <- xic_df$RT[max_idx]
   max_intensity <- xic_df$Intensity[max_idx]
-
-  # Calculate half of the maximum intensity
   half_max <- max_intensity / 2
 
-  # Calculate PPP only if the flag is enabled
   ppp <- if (plot_ppp) calculate_ppp_custom(xic_df$RT, xic_df$Intensity, threshold_ratio = PPP_THRESHOLD_RATIO) else NA
-
-  # Compute FWHM and its edges
   fwhm_data <- calculate_fwhm(xic_df$RT, xic_df$Intensity)
   fwhm <- fwhm_data$fwhm
   left_rt <- fwhm_data$left_rt
   right_rt <- fwhm_data$right_rt
 
-  # Create a line for the FWHM level if valid
   fwhm_line <- NULL
   if (!is.na(left_rt) && !is.na(right_rt) && !is.na(half_max)) {
     fwhm_line <- data.frame(
@@ -390,71 +386,71 @@ plot_xic <- function(rt_values, intensities, output_file, analyte_name = NULL, m
     )
   }
 
-  # Determine PPP threshold line
   ppp_threshold <- max_intensity * PPP_THRESHOLD_RATIO
 
-  # Prepare theoretical RT range text based on target and tolerance
-  if (!is.null(rt_target) && !is.null(rt_tol_sec)) {
+  rt_range_text <- if (!is.null(rt_target) && !is.null(rt_tol_sec)) {
     rt_min_theo <- rt_target - rt_tol_sec
     rt_max_theo <- rt_target + rt_tol_sec
-    rt_range_text <- glue("RT range: {round(rt_min_theo, 2)} - {round(rt_max_theo, 2)} sec")
+    glue("RT range: {round(rt_min_theo, 2)} - {round(rt_max_theo, 2)} s")
   } else {
-    rt_range_text <- ""
+    ""
   }
 
-  # Compose plot titles
-  plot_title <- glue("XIC for {analyte_name} (MS{ms_level})")
+  mz_info <- if (ms_level == 1 && !is.null(mz_theoretical)) {
+    glue("{round(mz_theoretical, 4)}")
+  } else if (ms_level == 2 && !is.null(fragment_mz)) {
+    glue("{round(fragment_mz, 4)}")
+  } else {
+    ""
+  }
+  plot_title <- glue("XIC for {analyte_name} {mz_info} (MS{ms_level})")
   plot_subtitle <- glue("Sample: {sample_name} | mz tol: ±{mz_tol_ppm} ppm | rt tol: ±{round(rt_tol_sec, 1)}s")
 
-  # Build and save the plot
   p <- ggplot(xic_df, aes(x = RT, y = Intensity)) +
-    # Main chromatogram line in blue
     geom_line(color = "blue", linewidth = 0.8) +
     geom_point(size = 1.6) +
-    # Max intensity marker and label in red
     geom_vline(xintercept = max_rt, linetype = "dashed", color = "red") +
     annotate("text", x = max_rt, y = max_intensity,
              label = "Max", color = "red", size = 3,
              vjust = -1, hjust = 1) +
-    # FWHM level as dotted dark green line
     { if (!is.null(fwhm_line)) geom_line(data = fwhm_line, aes(x = RT, y = Intensity),
                                          inherit.aes = FALSE,
                                          color = "darkgreen",
                                          linetype = "dotted",
                                          linewidth = 1) } +
-    # PPP threshold line in gray
     { if (plot_ppp) geom_hline(yintercept = ppp_threshold,
                                color = "gray40",
                                linetype = "dotdash") } +
-    # Annotations on the left, stacked vertically
-    annotate("text", x = -Inf, y = Inf,
-             label = glue("FWHM: {round(fwhm, 2)} sec"),
-             hjust = 0, vjust = 1, size = 3.5) +
-    { if (plot_ppp) annotate("text", x = -Inf, y = Inf,
+    
+    annotate("text", x = Inf, y = Inf,
+             label = glue("FWHM: {round(fwhm, 2)} s"),
+             hjust = 1, vjust = 1, size = 3.5) +
+    { if (plot_ppp) annotate("text", x = Inf, y = Inf,
                              label = glue("PPP: {ppp}"),
-                             hjust = 0, vjust = 2, size = 3.5) } +
-    annotate("text", x = -Inf, y = Inf,
+                             hjust = 1, vjust = 2, size = 3.5) } +
+    annotate("text", x = Inf, y = Inf,
              label = rt_range_text,
-             hjust = 0, vjust = 3, size = 3.5) +
+             hjust = 1, vjust = 3, size = 3.5) +
     ggtitle(plot_title, subtitle = plot_subtitle) +
-    xlab("Retention Time (sec)") + ylab("Intensity") +
-    # Allow annotations outside the panel and set margins
+    xlab("Retention Time (s)") + ylab("Intensity") +
     coord_cartesian(clip = "off") +
     theme_minimal() +
-    theme(plot.margin = margin(t = 20, r = 20, b = 20, l = 20))
+    theme(
+      plot.title = element_text(hjust = 1),
+      plot.subtitle = element_text(hjust = 1),
+      plot.margin = margin(t = 20, r = 20, b = 20, l = 20)
+    )
 
-  # Save figure to file
   ggsave(output_file, plot = p, width = 8, height = 6, dpi = 300, bg = "white")
 }
+
 
 # Write metric to JSON file
 update_metric_json <- function(metric_name, analyte, sample_name, value, ms_level) {
   ms_label <- paste0("MS", ms_level)
 
-  # Agafa el títol humanitzat (o el nom per defecte si no hi és)
   metric_title <- if (!is.null(json_titles[[metric_name]])) json_titles[[metric_name]] else metric_name
 
-  # Títol i secció més llegibles
   section_label <- paste(metric_title, ms_label)
 
   json_file <- file.path(getwd(), paste0(metric_name, "_", sample_name, "_mqc.json"))
@@ -462,32 +458,39 @@ update_metric_json <- function(metric_name, analyte, sample_name, value, ms_leve
   if (file.exists(json_file)) {
     json_data <- fromJSON(json_file)
   } else {
-    json_data <- list(
-      id = metric_name,  # No es toca!
-      section_name = section_label,
-      description = "",
-      plot_type = "linegraph",
-      pconfig = list(
-        id = paste0(metric_name, "_plot"),
-        title = section_label,
-        xlab = "Sample",
-        ylab = metric_title,
-        xlab_format = "category",
-        showlegend = TRUE
-      ),
-      data = list()
+  yaxis_config <- if (!is.null(json_yaxis_window[[metric_name]])) {
+    list(
+      ymin = json_yaxis_window[[metric_name]][1],
+      ymax = json_yaxis_window[[metric_name]][2]
     )
+  } else {
+    list()
   }
 
-  # Actualitza títol i secció (per si el fitxer ja existia amb un títol antic)
-  json_data$section_name <- section_label
-  json_data$pconfig$title <- section_label
-  json_data$pconfig$ylab <- metric_title
+  json_data <- list(
+    id = metric_name,  
+    section_name = section_label,
+    description = "",
+    plot_type = "linegraph",
+    pconfig = c(list(
+      id = paste0(metric_name, "_plot"),
+      title = section_label,
+      xlab = "Sample",
+      ylab = metric_title,
+      xlab_format = "category",
+      showlegend = TRUE
+    ), yaxis_config),
+    data = list()
+  )
+}
 
-  # Assigna la dada
-  json_data$data[[analyte]][[sample_name]] <- value
+json_data$section_name <- section_label
+json_data$pconfig$title <- section_label
+json_data$pconfig$ylab <- metric_title
 
-  write_json(json_data, path = json_file, auto_unbox = TRUE, pretty = TRUE)
+json_data$data[[analyte]][[sample_name]] <- value
+
+write_json(json_data, path = json_file, auto_unbox = TRUE, pretty = TRUE)
 }
 
 # Main processing loop
@@ -498,7 +501,11 @@ for (analyte in analyte_names) {
   mz1 <- assign_mz1(analyte_data, opt$msLevel)
   mz_tol <- (opt$mz_tol_ppm * mz1) / 1e6
   rt_target <- analyte_data$rt_target
-  message(glue("  mz1 = {mz1}, rt_target = {rt_target}, mz_tol = {mz_tol}, msLevel = {opt$msLevel}"))
+  message(glue("  MS{opt$msLevel} parameters:"))
+  message(glue("    Precursor m/z (mz1): {mz1}, RT target: {rt_target}, m/z tol: {mz_tol}"))
+  if (opt$msLevel == 2) {
+    message(glue("    Fragment target m/z (ms2_mz): {analyte_data$ms2_mz}"))
+  }
   xic <- compute_xic(ms_data, mz1, rt_target, opt$rt_tol_sec, mz_tol, opt$msLevel, opt$mz_tol_ppm, ms2_target_mz = if (opt$msLevel == 2) as.numeric(analyte_data$ms2_mz) else NULL)
   if (length(xic) == 0 || is.null(xic[[1]])) {
     message(glue("  No XIC signal found for analyte {analyte}. Skipping."))
@@ -533,7 +540,11 @@ for (analyte in analyte_names) {
   all_results[[analyte]] <- result_row
   message(glue("  Calculated metrics for {analyte}:"))
   message(glue("    Observed RT: {rt_obs}"))
-  message(glue("    Observed MZ: {mz_exp_result}"))
+  if (opt$msLevel == 1) {
+    message(glue("    Observed precursor m/z: {mz_exp_result} (expected: {mz1})"))
+  } else {
+    message(glue("    Observed fragment m/z: {mz_exp_result} (target: {analyte_data$ms2_mz})"))
+  }
   message(glue("    Max Intensity: {intensity_mz1}"))
   message(glue("    Area: {area_mz1}"))
   message(glue("    Log2 Area: {ifelse(!is.na(area_mz1) & area_mz1 > 0, log2(area_mz1), NA)}"))
@@ -547,14 +558,16 @@ for (analyte in analyte_names) {
       dir.create(dirname(opt$plot_output_path), recursive = TRUE, showWarnings = FALSE)
       message(glue("  Saving XIC plot to: {opt$plot_output_path}"))
       plot_xic(rt_values, int, opt$plot_output_path,
-               analyte_name = analyte,
-               ms_level = opt$msLevel,
-               mz_tol = mz_tol,
-               rt_tol_sec = opt$rt_tol_sec,
-               sample_name = sample_name,
-               mz_tol_ppm = opt$mz_tol_ppm,
-               plot_ppp = FALSE,
-              rt_target = analyte_data$rt_target)
+         analyte_name = analyte,
+         ms_level = opt$msLevel,
+         mz_tol = mz_tol,
+         rt_tol_sec = opt$rt_tol_sec,
+         sample_name = sample_name,
+         mz_tol_ppm = opt$mz_tol_ppm,
+         plot_ppp = FALSE,
+         rt_target = analyte_data$rt_target,
+         mz_theoretical = mz1,
+         fragment_mz = if (opt$msLevel == 2) as.numeric(analyte_data$ms2_mz) else NULL)
     }
   }
 
