@@ -455,40 +455,55 @@ update_metric_json <- function(metric_name, analyte, sample_name, value, ms_leve
   if (file.exists(json_file)) {
     json_data <- fromJSON(json_file)
   } else {
-  yaxis_config <- if (!is.null(json_yaxis_window[[metric_name]])) {
-    list(
-      ymin = json_yaxis_window[[metric_name]][1],
-      ymax = json_yaxis_window[[metric_name]][2]
+    yaxis_config <- if (!is.null(json_yaxis_window[[metric_name]])) {
+      list(
+        ymin = json_yaxis_window[[metric_name]][1],
+        ymax = json_yaxis_window[[metric_name]][2]
+      )
+    } else {
+      list()
+    }
+
+    json_data <- list(
+      id = metric_name,
+      section_name = section_label,
+      description = "",
+      plot_type = "linegraph",
+      pconfig = c(list(
+        id = paste0(metric_name, "_plot"),
+        title = section_label,
+        xlab = "Sample",
+        ylab = metric_title,
+        xlab_format = "category",
+        showlegend = TRUE,
+        style = "lines+markers"
+      ), yaxis_config),
+      data = list()
     )
-  } else {
-    list()
   }
 
-  json_data <- list(
-    id = metric_name,  
-    section_name = section_label,
-    description = "",
-    plot_type = "linegraph",
-    pconfig = c(list(
-      id = paste0(metric_name, "_plot"),
-      title = section_label,
-      xlab = "Sample",
-      ylab = metric_title,
-      xlab_format = "category",
-      showlegend = TRUE,
-      style = "lines+markers"
-    ), yaxis_config),
-    data = list()
+  json_data$section_name <- section_label
+  json_data$pconfig$title <- section_label
+  json_data$pconfig$ylab  <- metric_title
+
+  if (is.character(value) && value == "NA") {
+    value <- NA
+  }
+
+  if (!is.null(value) && !(is.list(value) && length(value) == 0) && !(is.na(value))) {
+    if (is.null(json_data$data[[analyte]])) {
+      json_data$data[[analyte]] <- list()
+    }
+    json_data$data[[analyte]][[sample_name]] <- value
+  }
+
+  write_json(
+    json_data,
+    path       = json_file,
+    auto_unbox = TRUE,
+    pretty     = TRUE,
+    na         = "null"
   )
-}
-
-json_data$section_name <- section_label
-json_data$pconfig$title <- section_label
-json_data$pconfig$ylab <- metric_title
-
-json_data$data[[analyte]][[sample_name]] <- value
-
-write_json(json_data, path = json_file, auto_unbox = TRUE, pretty = TRUE)
 }
 
 # Main processing loop
