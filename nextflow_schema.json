@@ -177,7 +177,7 @@
                 "analytes_tsv": {
                     "type": "string",
                     "format": "file-path",
-                    "description": "Path to a tab-separated values (TSV) file describing the analytes for chromatographic peak extraction. Must include columns: short_name, long_name, mz_M0 (required), and optionally mz_M1, mz_M2, ms2_mz, and rt_teoretical (required). Only mz_M0 and rt_teoretical are mandatory. mz_M1 and mz_M2 are reserved for future support of isotopic envelope integration.",
+                    "description": "Path to a tab-separated values (TSV) file describing the analytes for chromatographic peak extraction. Must include columns: `short_name`, `long_name`, `mz_M0` (required), and optionally `mz_M1`, `mz_M2`, `ms2_mz`, and `rt_teoretical` (required). Only `mz_M0` and `rt_teoretical` are mandatory. `mz_M1` and `mz_M2` are reserved for future support of isotopic envelope integration.",
                     "mimetype": "text/tab-separated-values",
                     "pattern": "^\\S+\\.tsv$",
                     "fa_icon": "fas fa-file"
