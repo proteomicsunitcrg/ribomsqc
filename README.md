@@ -51,7 +51,8 @@
    | G           | Guanosine 25 μg/mL                      | 284.0989 |        |        | 152.0567 | 1726           |
    | m7G         | 7-Methylguanosine 25 μg/mL              | 298.1146 |        |        | 166.0723 | 554            |
 
-   > **Note:** Replace **only** the values in the `rt_teoretical` column with **your own** retention times (in seconds) for each compound.
+   > [!NOTE] 
+   > Replace **only** the values in the `rt_teoretical` column with **your own** retention times (in seconds) for each compound.
 
 3. **Run the pipeline**:
 
