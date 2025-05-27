@@ -26,7 +26,7 @@
 > \[!NOTE]
 > If you are new to Nextflow and nf-core, please refer to [this page](https://nf-co.re/docs/usage/installation) on how to set-up Nextflow.
 
-1. **Prepare a samplesheet** with your input data, for example `samplesheet.csv`:
+1. **Prepare a samplesheet** with your input data, for example:
 
    ```csv title="samplesheet.csv"
    id,raw_file
