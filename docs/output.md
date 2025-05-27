@@ -2,7 +2,8 @@
 
 ## Introduction
 
-This document describes the output produced by the pipeline. After execution, the following directories will be created under the top-level `results/` directory, each containing key output files necessary for downstream QC and reporting.
+This document describes the output produced by the pipeline.
+After execution, the following directories will be created under the top-level `results/` directory, each containing key output files necessary for downstream QC and reporting.
 
 ## Pipeline overview
 
