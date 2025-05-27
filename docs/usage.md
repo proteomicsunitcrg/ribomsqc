@@ -30,7 +30,9 @@ Sample_XYZ,/another/path/to/Sample_XYZ.raw
 - **id**: Unique identifier for the sample. This can be any descriptive label and is used to name output files.
 - **raw_file**: Full path to the corresponding RAW instrument file. Multiple entries can be included to analyze several samples in one pipeline run.
 
-> **Note:** The `Day_5` row above is just an example. Replace it with your actual sample IDs and file paths.
+:::note
+The `Day_5` row above is just an example. Replace it with your actual sample IDs and file paths.
+:::
 
 
 ## Analytes TSV input
