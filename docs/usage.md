@@ -79,7 +79,9 @@ The `--outdir` parameter specifies where the pipeline output files will be store
 - If a **relative folder name** is provided (e.g., `results`), the directory will be created in the current working directory from which the pipeline is launched.
 - If an **absolute path** is given (e.g., `/home/user/project/ribomsqc_output`), the output will be created exactly at the specified location.
 
-> **Tip:** Use absolute paths in scripts or production workflows to ensure consistent and predictable file placement, especially when running from different directories or via automation.
+:::tip
+Use absolute paths in scripts or production workflows to ensure consistent and predictable file placement, especially when running from different directories or via automation.
+:::
 
 ## Running the pipeline
 
