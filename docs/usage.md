@@ -2,12 +2,11 @@
 
 ## ⚠️ Please read this documentation on the nf-core website: [https://nf-co.re/ribomsqc/usage](https://nf-co.re/ribomsqc/usage)
 
-> *Documentation of pipeline parameters is generated automatically from the pipeline schema and can no longer be found in markdown files.*
+> _Documentation of pipeline parameters is generated automatically from the pipeline schema and can no longer be found in markdown files._
 
 ## Introduction
 
 `nf-core/ribomsqc` is a quality control (QC) pipeline designed for monitoring mass spectrometry performance in ribonucleoside analysis. It parses RAW files, performs XIC extraction using analyte definitions, and generates summary plots with MultiQC.
-
 
 ## Samplesheet input
 
@@ -34,7 +33,6 @@ Sample_XYZ,/another/path/to/Sample_XYZ.raw
 The `Day_5` row above is just an example. Replace it with your actual sample IDs and file paths.
 :::
 
-
 ## Analytes TSV input
 
 To define which compounds should be targeted for chromatographic extraction (XIC), the pipeline requires a tab-delimited TSV file passed with:
@@ -45,26 +43,31 @@ To define which compounds should be targeted for chromatographic extraction (XIC
 
 This file must follow a strict format and include the following columns in this exact order:
 
-| short\_name | long\_name                              | mz\_M0   | mz\_M1 | mz\_M2 | ms2\_mz  | rt\_teoretical |
-| ----------- | --------------------------------------- | -------- | ------ | ------ | -------- | -------------- |
-| C           | Cytidine 50 μg/mL                       | 244.0928 |        |        | 112.0505 | 555            |
-| U           | Uridine 25 μg/mL                        | 245.0768 |        |        | 113.0346 | 1566           |
-| m3C         | 3-Methylcytidine methosulfate 100 μg/mL | 258.1084 |        |        | 126.0662 | 508            |
-| m5C         | 5-Methylcytidine 100 μg/mL              | 258.1084 |        |        | 126.0662 | 655            |
-| Cm          | 2-O-Methylcytidine 20 μg/mL             | 258.1084 |        |        | 112.0505 | 883            |
-| m5U         | 5-Methyluridine 50 μg/mL                | 259.0925 |        |        | 127.0502 | 1866           |
-| I           | Inosine 25 μg/mL                        | 269.088  |        |        | 137.0458 | 1741           |
-| m1A         | 1-Methyladenosine 25 μg/mL              | 282.1197 |        |        | 150.0774 | 523            |
-| G           | Guanosine 25 μg/mL                      | 284.0989 |        |        | 152.0567 | 1726           |
-| m7G         | 7-Methylguanosine 25 μg/mL              | 298.1146 |        |        | 166.0723 | 554            |
+| short_name | long_name                               | mz_M0    | mz_M1 | mz_M2 | ms2_mz   | rt_teoretical |
+| ---------- | --------------------------------------- | -------- | ----- | ----- | -------- | ------------- |
+| C          | Cytidine 50 μg/mL                       | 244.0928 |       |       | 112.0505 | 555           |
+| U          | Uridine 25 μg/mL                        | 245.0768 |       |       | 113.0346 | 1566          |
+| m3C        | 3-Methylcytidine methosulfate 100 μg/mL | 258.1084 |       |       | 126.0662 | 508           |
+| m5C        | 5-Methylcytidine 100 μg/mL              | 258.1084 |       |       | 126.0662 | 655           |
+| Cm         | 2-O-Methylcytidine 20 μg/mL             | 258.1084 |       |       | 112.0505 | 883           |
+| m5U        | 5-Methyluridine 50 μg/mL                | 259.0925 |       |       | 127.0502 | 1866          |
+| I          | Inosine 25 μg/mL                        | 269.088  |       |       | 137.0458 | 1741          |
+| m1A        | 1-Methyladenosine 25 μg/mL              | 282.1197 |       |       | 150.0774 | 523           |
+| G          | Guanosine 25 μg/mL                      | 284.0989 |       |       | 152.0567 | 1726          |
+| m7G        | 7-Methylguanosine 25 μg/mL              | 298.1146 |       |       | 166.0723 | 554           |
 
 ### Column Descriptions
 
-- **short_name**: Unique short identifier for the compound (used internally by the pipeline).
-- **long_name**: Full descriptive name of the analyte, optionally including concentration for traceability.
-- **mz_M0 / mz_M1 / mz_M2**: Monoisotopic (and optionally heavy label) mass-to-charge values. Only `mz_M0` is required.
-- **ms2_mz**: Fragment ion used for MS2-level extraction, if applicable.
-- **rt_teoretical**: Expected retention time (in seconds). **This is the only column you are expected to customize** for your instrument and conditions.
+### Column Descriptions
+
+| Column            | Description                                                                 |
+| ----------------- | --------------------------------------------------------------------------- |
+| `short_name`      | Unique short identifier for the compound (used internally by the pipeline). |
+| `long_name`       | Full descriptive name of the analyte, optionally including concentration.   |
+| `mz_M0`           | Monoisotopic mass-to-charge ratio. **Required**.                            |
+| `mz_M1` / `mz_M2` | Optional isotopic variant m/z values. Reserved for future versions.         |
+| `ms2_mz`          | Fragment ion used for MS2-level extraction, if applicable.                  |
+| `rt_teoretical`   | Expected retention time (in seconds). **You must customize this value.**    |
 
 ### Notes
 
@@ -148,16 +151,16 @@ nextflow pull nf-core/ribomsqc
 
 ## Core Nextflow options
 
-* `-profile docker|singularity|conda|podman|...`: Choose execution environment
-* `-resume`: Resume from a previous run
-* `-params-file`: Load parameters from a YAML/JSON file
-* `-c`: Load additional config for cluster resources, etc.
+- `-profile docker|singularity|conda|podman|...`: Choose execution environment
+- `-resume`: Resume from a previous run
+- `-params-file`: Load parameters from a YAML/JSON file
+- `-c`: Load additional config for cluster resources, etc.
 
 ## Tips
 
-* Use `-profile singularity` for reproducibility
-* Compatible with [Wave containers](https://seqera.io/wave/) for dynamic container resolution
-* For cluster configs, see [nf-core/configs](https://github.com/nf-core/configs)
+- Use `-profile singularity` for reproducibility
+- Compatible with [Wave containers](https://seqera.io/wave/) for dynamic container resolution
+- For cluster configs, see [nf-core/configs](https://github.com/nf-core/configs)
 
 ## Example output
 
