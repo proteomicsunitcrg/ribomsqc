@@ -30,7 +30,7 @@
 
    ```csv title="samplesheet.csv"
    id,raw_file
-   Day_5,/full/path/to/Day_5.raw
+   Day_5,path/to/Day_5.raw
    ```
 
    * `id`: Sample identifier
