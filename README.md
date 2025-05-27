@@ -72,7 +72,7 @@
      -profile singularity
    ```
 
-> \[!WARNING]
+> [!WARNING]
 > Please provide pipeline parameters via the CLI or Nextflow `-params-file` option.
 
 For more information, see the [usage docs](https://nf-co.re/ribomsqc/usage) and [parameters](https://nf-co.re/ribomsqc/parameters).
